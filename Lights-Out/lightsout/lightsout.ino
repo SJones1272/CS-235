@@ -1,13 +1,14 @@
 /* More to come... */
 
-byte lightState; //current byte value for the 8 leds.
-byte dataArray[8]; //stores the values for turning on/off specific bits
-
+int lightState; //current byte value for the 8 leds.
+int dataArray[8]; //stores the values for turning on/off specific bits
 
 //for the shift register
-int latchPin;
-int dataPin;
-int clockPin;
+int latchPin = 13;
+int dataPin = 13;
+int clockPin = 13;
+int led9Pin = 13;
+
 
 void setup(){
   // 0xFF -- 11111111
