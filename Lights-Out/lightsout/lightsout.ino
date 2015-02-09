@@ -64,7 +64,7 @@ void loop(){
     
    if(b[j].rose())
    {
-          Serial.print(j);    
+          //Serial.print(j);    
     makeMove(j);
    }
   } 
@@ -158,6 +158,7 @@ int getCol(int i){
   }
   else
     return -1;
+    Serial.println("Error in getCol" + "  " + i);
 }
 
 
