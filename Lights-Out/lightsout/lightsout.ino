@@ -100,13 +100,14 @@ void setLED(int ledToSet, boolean state)
   
 void startGame(){
   //turns on a random number of lights - need to check to see if all combinations are winable
- for(int i = 0; i < 2;i++)
+ for(int i = 0; i < 3;i++)
   {
    for(int j = 0; j < 3; j++)
   {
    board[i][j] = random(0,2);
   } 
   }
+  board[1][1] = false;
    updateBoard();
 //  setLED(8,true);
 //  digitalWrite(latchPin,0);
@@ -158,14 +159,14 @@ int getCol(int i){
   }
   else
     return -1;
-    Serial.println("Error in getCol" + "  " + i);
+    //Serial.println("Error in getCol" + "  " + i);
 }
 
 
 //changes board based off of a given light position
-void makeMove(int i){
-  int rw = getRow(i);
-  int cw = getCol(i);
+void makeMove(int i){                                              // [ 0 1 2]
+  int rw = getRow(i);                                              // [ 3 4 5]
+  int cw = getCol(i);                                              // [ 6 7 8]
   //if its a light in the first col
   if( cw == 0){ 
       //change starting position
