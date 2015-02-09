@@ -43,6 +43,7 @@ void setup(){
   //set the latch to output and LED9 to output
   pinMode(latchPin,OUTPUT);
   pinMode(led9Pin,OUTPUT); 
+  startGame();
 }
 
 
@@ -54,10 +55,16 @@ void loop(){
   //check all debouncers
    for(int j = 0; j < buttonMax;j++)
   {
-   if(b[j].rose()==HIGH)
+//    while(b[j].read()==LOW) {
+//       digitalWrite(latchPin,0);
+//       shiftOut(dataPin,clockPin,0xFF);
+//       digitalWrite(led9Pin,HIGH);
+//       digitalWrite(latchPin,1); 
+//  }
+    
+   if(b[j].rose())
    {
-          Serial.print(j );    
-
+          Serial.print(j);    
     makeMove(j);
    }
   } 
@@ -93,7 +100,18 @@ void setLED(int ledToSet, boolean state)
   
 void startGame(){
   //turns on a random number of lights - need to check to see if all combinations are winable
-  currentState = dataArray[random(0,7)];
+ for(int i = 0; i < 2;i++)
+  {
+   for(int j = 0; j < 3; j++)
+  {
+   board[i][j] = random(0,2);
+  } 
+  }
+   updateBoard();
+//  setLED(8,true);
+//  digitalWrite(latchPin,0);
+//  shiftOut(dataPin,clockPin,0xFF);
+//  digitalWrite(latchPin,1);
 }
 
 //won if all lights are off
@@ -102,7 +120,8 @@ boolean hasWon(){
   {
     for(int j = 0; j<3; j++){
        if(board[i][j]){
-         break;}
+         return false;
+     }
     }
   }
   return true;
@@ -245,6 +264,7 @@ void shiftOut(int myDataPin, int myClockPin, byte myDataOut) {
 //sends appropriate info to turn leds on/off based on current board
 void updateBoard(){
   
+
    for(int k =0; k < 3; k++){
      for(int r = 0; r < 3; r++)
     {
