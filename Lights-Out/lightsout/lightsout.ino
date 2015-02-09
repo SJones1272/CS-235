@@ -1,15 +1,23 @@
 /* More to come... */
+#include <Bounce2.h>
 
 int lightState; //current byte value for the 8 leds.
 int dataArray[8]; //stores the values for turning on/off specific bits
 
 //for the shift register
 int latchPin = 13;
-int dataPin = 13;
-int clockPin = 13;
-int led9Pin = 13;
+int dataPin = 11;
+int clockPin = 12;
 //current state of the board
 boolean board[3][3];
+
+//Button logic variables
+int buttonMax = 9;
+int ledMax = 9;      // Leds 0-8 Use shift register, led9 uses ?????? FILL IN HERE ??? ??
+int firstButton = 2; //buttons use pins 2-10
+Bounce b[9]; // An array of debouncers for the 9 buttons
+boolean led[9]; //an array of booleans to keep track of LED states
+int led9Pin = A0;
 
 byte currentState;
 void setup(){
@@ -23,12 +31,46 @@ void setup(){
   dataArray[6] = 0x40;  //01000000
   dataArray[7] = 0x80;  //10000000
   
+  //Initialize debouncers and button pins and set LED states to false
+  for(int i = 0; i < buttonMax; i++)
+  {
+    b[i] = Bounce();
+    pinMode(i+firstButton,INPUT);
+    b[i].attach(i+firstButton);
+    b[i].interval(10); 
+    led[i] = false;
+  }
+  //set the latch to output and LED9 to output
+  pinMode(latchPin,OUTPUT);
+  pinMode(led9Pin,OUTPUT); 
 }
 
 
 void loop(){
   
+  //update all debouncers
+  for(int i =0; i < buttonMax; i++){ b[i].update();}
   
+  //check all debouncers
+   for(int j = 0; j < buttonMax;j++)
+  {
+   if(b[j].rose()==HIGH)
+   {
+    makeMove(j); //IS THIS RIGHT?
+   }
+  } 
+  //set the LED's
+ for(int k =0; k < ledMax; k++){
+  setLED(k+1,led[k]);
+  }
+  
+  
+  //write out the LED's
+  digitalWrite(latchPin,0);
+  shiftOut(dataPin,clockPin, lightState);
+  digitalWrite(latchPin,1);
+  //write LED9
+  digitalWrite(led9Pin,led[8]);
 }
 
 void setLED(int ledToSet, boolean state)
@@ -36,7 +78,7 @@ void setLED(int ledToSet, boolean state)
     digitalWrite(latchPin, 0);
     if(ledToSet == 9)
     {
-      digitalWrite(led9Pin,state);
+      //DO NOTHING
     }else if(state)
     {
       lightState = lightState | dataArray[ledToSet-1];
@@ -152,6 +194,53 @@ void makeMove(int i){
        board[rw-1][cw] = !board[rw-1][cw];
       }
   }
+}
+
+//HELPER FUNCTION from 
+void shiftOut(int myDataPin, int myClockPin, byte myDataOut) {
+  // This shifts 8 bits out MSB first, 
+  //on the rising edge of the clock,
+  //clock idles low
+
+  //internal function setup
+  int i=0;
+  int pinState;
+  pinMode(myClockPin, OUTPUT);
+  pinMode(myDataPin, OUTPUT);
+
+  //clear everything out just in case to
+  //prepare shift register for bit shifting
+  digitalWrite(myDataPin, 0);
+  digitalWrite(myClockPin, 0);
+
+  //for each bit in the byte myDataOut�
+  //NOTICE THAT WE ARE COUNTING DOWN in our for loop
+  //This means that %00000001 or "1" will go through such
+  //that it will be pin Q0 that lights. 
+  for (i=7; i>=0; i--)  {
+    digitalWrite(myClockPin, 0);
+
+    //if the value passed to myDataOut and a bitmask result 
+    // true then... so if we are at i=6 and our value is
+    // %11010100 it would the code compares it to %01000000 
+    // and proceeds to set pinState to 1.
+    if ( myDataOut & (1<<i) ) {
+      pinState= 1;
+    }
+    else {  
+      pinState= 0;
+    }
+
+    //Sets the pin to HIGH or LOW depending on pinState
+    digitalWrite(myDataPin, pinState);
+    //register shifts bits on upstroke of clock pin  
+    digitalWrite(myClockPin, 1);
+    //zero the data pin after shift to prevent bleed through
+    digitalWrite(myDataPin, 0);
+  }
+
+  //stop shifting
+  digitalWrite(myClockPin, 0);
 }
 
 //sends appropriate info to turn leds on/off based on current board
