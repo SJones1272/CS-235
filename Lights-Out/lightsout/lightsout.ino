@@ -21,6 +21,7 @@ int led9Pin = A0;
 
 byte currentState;
 void setup(){
+  Serial.begin(9600);
   // 0xFF -- 11111111
   dataArray[0] = 0x01;  //00000001
   dataArray[1] = 0x02;  //00000010
@@ -38,7 +39,6 @@ void setup(){
     pinMode(i+firstButton,INPUT);
     b[i].attach(i+firstButton);
     b[i].interval(10); 
-    led[i] = false;
   }
   //set the latch to output and LED9 to output
   pinMode(latchPin,OUTPUT);
@@ -56,38 +56,38 @@ void loop(){
   {
    if(b[j].rose()==HIGH)
    {
-    makeMove(j); //IS THIS RIGHT?
+          Serial.print(j );    
+
+    makeMove(j);
    }
   } 
-  //set the LED's
- for(int k =0; k < ledMax; k++){
-  setLED(k+1,led[k]);
+  //update board
+  updateBoard();
+  //check if won
+  if(hasWon())
+  {
+    while(true)
+    {
+       startGame();
+       updateBoard();
+       delay(50);
+    }
   }
-  
-  
-  //write out the LED's
-  digitalWrite(latchPin,0);
-  shiftOut(dataPin,clockPin, lightState);
-  digitalWrite(latchPin,1);
-  //write LED9
-  digitalWrite(led9Pin,led[8]);
 }
 
 void setLED(int ledToSet, boolean state)
   {
     digitalWrite(latchPin, 0);
-    if(ledToSet == 9)
+    if(ledToSet == 8)
     {
-      //DO NOTHING
+      digitalWrite(led9Pin,state);
     }else if(state)
     {
-      lightState = lightState | dataArray[ledToSet-1];
+      lightState = lightState | dataArray[ledToSet];
     }
     else {
-      lightState = lightState & (~ dataArray[ledToSet-1]); //bitwise not is ~
+      lightState = lightState & (~ dataArray[ledToSet]); //bitwise not is ~
     }
-    
-  //  shiftOut(dataPin, clockPin, lightState);
     digitalWrite(latchPin,1);
   }
   
@@ -98,7 +98,6 @@ void startGame(){
 
 //won if all lights are off
 boolean hasWon(){
-  int sum = 0;
   for(int i = 0; i<3; i++)
   {
     for(int j = 0; j<3; j++){
@@ -245,5 +244,14 @@ void shiftOut(int myDataPin, int myClockPin, byte myDataOut) {
 
 //sends appropriate info to turn leds on/off based on current board
 void updateBoard(){
-  //use previous function
+  
+   for(int k =0; k < 3; k++){
+     for(int r = 0; r < 3; r++)
+    {
+     setLED((k*3+r),board[k][r]);
+    } 
+  }
+  digitalWrite(latchPin,0);
+  shiftOut(dataPin,clockPin,lightState);
+  digitalWrite(latchPin,1);
 }
