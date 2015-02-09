@@ -189,11 +189,11 @@ void makeMove(int i){
     board[rw][cw-1] = !board[rw][cw-1];
     //change up one position
     if((rw==1) || (rw==2)){
-       board[rw+1][cw] = !board[rw+1][cw];
+       board[rw-1][cw] = !board[rw-1][cw];
     }
     //change down one position
     if(rw==1 || rw == 0){
-      board[rw-1][cw] = !board[rw-1][cw]; 
+      board[rw+1][cw] = !board[rw+1][cw]; 
     }
     
    }
