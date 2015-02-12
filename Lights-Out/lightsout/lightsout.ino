@@ -43,6 +43,15 @@ void setup(){
   //set the latch to output and LED9 to output
   pinMode(latchPin,OUTPUT);
   pinMode(led9Pin,OUTPUT); 
+  while(true)
+  {
+   b[4].update();
+   if(b[4].rose())
+    {
+     randomSeed(millis());
+     break;
+    }
+  }
   startGame();
 }
 
@@ -77,6 +86,11 @@ void loop(){
     {
        startGame();
        updateBoard();
+       b[4].update();
+       if(b[4].rose())
+       {
+         break;
+       }
        delay(50);
     }
   }
@@ -107,7 +121,7 @@ void startGame(){
    board[i][j] = random(0,2);
   } 
   }
-  board[1][1] = false;
+  board[random(0,2)][random(0,2)] = false;
    updateBoard();
 //  setLED(8,true);
 //  digitalWrite(latchPin,0);
