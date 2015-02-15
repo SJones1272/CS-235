@@ -1,0 +1,60 @@
+// NeoPixel Ring simple sketch (c) 2013 Shae Erisson
+// released under the GPLv3 license to match the rest of the AdaFruit NeoPixel library
+
+#include <Adafruit_NeoPixel.h>
+#include <avr/power.h>
+
+// Which pin on the Arduino is connected to the NeoPixels?
+// On a Trinket or Gemma we suggest changing this to 1
+#define PIN            6
+#define maxPixel       67
+// How many NeoPixels are attached to the Arduino?
+#define NUMPIXELS      maxPixel
+
+// When we setup the NeoPixel library, we tell it how many pixels, and which pin to use to send signals.
+// Note that for older NeoPixel strips you might need to change the third parameter--see the strandtest
+// example for more information on possible values.
+Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
+
+int delayval = 50; // delay for half a second
+
+void setup() {
+  // This is for Trinket 5V 16MHz, you can remove these three lines if you are not using a Trinket
+#if defined (__AVR_ATtiny85__)
+  if (F_CPU == 16000000) clock_prescale_set(clock_div_1);
+#endif
+  // End of trinket special code
+  Serial.begin(9600);
+  pixels.begin(); // This initializes the NeoPixel library.
+}
+
+void loop() {
+
+  // For a set of NeoPixels the first NeoPixel is 0, second is 1, all the way up to the count of pixels minus one.
+  
+  for(int i=0;i<NUMPIXELS;i++){
+    int value = analogRead(A0);
+    value = map(value,0,750,0,maxPixel);
+    value = maxPixel - value;
+    int i = value;
+    Serial.println(value);
+    // pixels.Color takes RGB values, from 0,0,0 up to 255,255,255
+    while(value >= 0)
+    {
+     pixels.setPixelColor(value, pixels.Color(random(20,175),random(0,175),100)); // Moderately bright green color.     
+     value--; 
+    }
+    pixels.show();
+    delay(20);
+    while(i > 0)
+    {
+      pixels.setPixelColor(i,0); // Moderately bright green color.     
+     i--; 
+    }
+
+   // This sends the updated pixel color to the hardware.
+
+    delay(delayval); // Delay for a period of time (in milliseconds).
+
+  }
+}
