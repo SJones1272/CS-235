@@ -12,6 +12,9 @@
 int RXPin = 2;
 int TXPin = 3;
 
+const double EIFFEL_TOWER_LAT = 48.85826;
+const double EIFFEL_TOWER_LNG = 2.294516;
+
 // The Skytaq EM-506 GPS module included in the GPS Shield Kit
 // uses 4800 baud by default
 int GPSBaud = 4800;
@@ -25,7 +28,7 @@ Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, NEOPIN, NEO_GRB + NEO_KH
 
 double destLat;
 double destLng;
-
+int brightness;
 
 void setup()
 {
@@ -40,15 +43,31 @@ void setup()
   Serial.print(F("Testing TinyGPS++ library v. ")); Serial.println(TinyGPSPlus::libraryVersion());
   Serial.println(F("by Mikal Hart"));
   Serial.println(); 
+  
+  destLat = 48.85826;
+  destLng = 2.294516;
+  pixels.begin();
+  
 }
 
 void loop()
 {
+  
     // This sketch displays information every time a new sentence is correctly encoded.
-  while (gpsSerial.available() > 0)
+   while (gpsSerial.available() > 0)
     if (gps.encode(gpsSerial.read())){
       displayInfo();
+      Serial.println(gps.satellites.value());
     }
+    
+    if(gps.satellites.value() == 0)
+      showX(pixels.Color(brightness,0,0);
+    else
+    {
+     updateBrightness();
+    }
+    
+    
   // If 5000 milliseconds pass and there are no characters coming in
   // over the software serial port, show a "No GPS detected" error
   if (millis() > 5000 && gps.charsProcessed() < 10)
@@ -56,12 +75,22 @@ void loop()
     Serial.println(F("No GPS detected"));
     while(true);
   }
+  
+}
+
+void updateBrightness()
+{
+  int time = gps.time.hour();
+ if(time >= 18 || time <= 6)
+  brightness = 200;
+   else
+  brightness = 100; 
 }
 
 //h is the current heading
-void showDirection(int h)
+void showDirection()
 {
-  showArrow(getDirection(h), 32);
+  showArrow(getDirection(), pixels.Color(0,brightness,0));
 }
 
 // 0 = forward
@@ -83,6 +112,7 @@ void showArrow(int dir, uint32_t c)
   case 5 : downLeft(c); break;
   case 6 : left(c); break;
   case 7 : upLeft(c); break;
+  case 8 : up(c); break;
   default : showX(c); break;
   }
 }
@@ -226,8 +256,12 @@ void showCross(uint32_t color){
   
 
 //h is current heading
-int getDirection(int h)
+int getDirection()
 {
+  int h = getHeading();
+  if(h == 8)
+    h = 0;
+  
   int temp = h - headingToDest();
   if(temp <= 0)
   {
