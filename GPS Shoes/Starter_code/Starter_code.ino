@@ -28,7 +28,8 @@ Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, NEOPIN, NEO_GRB + NEO_KH
 
 double destLat;
 double destLng;
-int brightness;
+int brightness = 150;
+int v, v2;
 
 void setup()
 {
@@ -47,12 +48,34 @@ void setup()
   destLat = 48.85826;
   destLng = 2.294516;
   pixels.begin();
-  
+  v = 0;
+  v2 = 0;
+  for(int i = 0; i < 10;i++)
+  {
+   showArrow(i,pixels.Color(0,0,150));
+  pixels.show();
+  delay(500);
+ pixels.clear(); 
+  }
+ 
+  pixels.clear(); 
 }
 
 void loop()
-{
+{ 
   
+  for(int i = 0; i < 8 ; i++)
+  {
+   for(int j = 0; j < 8; j++)
+     {
+      v = i; v2 = j;
+      showDirection();
+      pixels.show();
+      delay(500);
+      pixels.clear();
+     }  
+  }
+  /*
     // This sketch displays information every time a new sentence is correctly encoded.
    while (gpsSerial.available() > 0)
     if (gps.encode(gpsSerial.read())){
@@ -75,6 +98,7 @@ void loop()
     Serial.println(F("No GPS detected"));
     while(true);
   }
+  */
   
 }
 
@@ -103,6 +127,7 @@ void showDirection()
 // 7 = up left
 void showArrow(int dir, uint32_t c)
 {
+  Serial.println(dir);
   switch (dir) {
   case 0 : up(c); break;
   case 1 : upRight(c); break;
@@ -176,11 +201,11 @@ void upRight(uint32_t color)
  pixels.setPixelColor(0,color);
  pixels.setPixelColor(8,color);
  pixels.setPixelColor(12,color);
- pixels.setPixelColor(18,color);
+ pixels.setPixelColor(16,color);
  pixels.setPixelColor(24,color);
  
  pixels.setPixelColor(23,color);
- pixels.setPixelColor(19,color); 
+ pixels.setPixelColor(15,color); 
  pixels.setPixelColor(22,color);
  pixels.setPixelColor(14,color); 
 }
@@ -190,11 +215,11 @@ void upLeft(uint32_t color)
  pixels.setPixelColor(4,color);
  pixels.setPixelColor(6,color);
  pixels.setPixelColor(12,color);
- pixels.setPixelColor(16,color);
+ pixels.setPixelColor(18,color);
  pixels.setPixelColor(20,color);
  
  pixels.setPixelColor(21,color);
- pixels.setPixelColor(15,color); 
+ pixels.setPixelColor(19,color); 
  pixels.setPixelColor(22,color);
  pixels.setPixelColor(10,color); 
 }
@@ -204,7 +229,7 @@ void downLeft(uint32_t color)
  pixels.setPixelColor(0,color);
  pixels.setPixelColor(8,color);
  pixels.setPixelColor(12,color);
- pixels.setPixelColor(18,color);
+ pixels.setPixelColor(16,color);
  pixels.setPixelColor(24,color);
  
  pixels.setPixelColor(9,color);
@@ -218,7 +243,7 @@ void downRight(uint32_t color)
  pixels.setPixelColor(4,color);
  pixels.setPixelColor(6,color);
  pixels.setPixelColor(12,color);
- pixels.setPixelColor(16,color);
+ pixels.setPixelColor(18,color);
  pixels.setPixelColor(20,color);
  
  pixels.setPixelColor(3,color);
@@ -282,19 +307,25 @@ returns a numerical destination
 7 -> NW
 */
 int getHeading()
-{
+{/*
  double temp = gps.course.deg();
   return round(temp/ 45);
+*/
+
+return v;
 }
 
 int headingToDest()
 {
+  return v2;
+  /*
  double heading = gps.courseTo(
     gps.location.lat(),
     gps.location.lng(),
     destLat,
     destLng);
    return round(heading/45); 
+*/
 }
 
 void displayInfo()
