@@ -5,7 +5,7 @@
 // How many NeoPixels are attached to the Arduino?
 #define NUMPIXELS      25
 
-#define NEOPIN 6 //The control pin for the neopixels
+#define NEOPIN 6 // The control pin for the neopixels
 
 // Choose two Arduino pins to use for software serial
 // The GPS Shield uses D2 and D3 by default when in DLINE mode
