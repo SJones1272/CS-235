@@ -1,3 +1,5 @@
+#include <Bounce2.h>
+
 #include <TinyGPS++.h>
 #include <Adafruit_NeoPixel.h>
 #include <SoftwareSerial.h>
@@ -6,7 +8,8 @@
 #define NUMPIXELS      25
 
 #define NEOPIN 6 // The control pin for the neopixels
-
+#define selectPin 9
+#define resetPin 7
 // Choose two Arduino pins to use for software serial
 // The GPS Shield uses D2 and D3 by default when in DLINE mode
 int RXPin = 2;
@@ -17,6 +20,7 @@ const double EIFFEL_TOWER_LNG = 2.294516;
 const int TREASURE = 1;
 const int EXER = 2;
 const int OPTIONS = 3;
+
 // The Skytaq EM-506 GPS module included in the GPS Shield Kit
 // uses 4800 baud by default
 int GPSBaud = 4800;
@@ -34,6 +38,9 @@ int brightness = 150;
 int curMenu = 0; // the current menu value
 int potTwist; //the twist of the potentiometer for selecting things.
 
+Bounce selectButton;
+Bounce resetButton;
+
 /* 0 is top menu, 
 1 is Treasure Hunt, 
 2 is Exercise tracker,
@@ -44,6 +51,16 @@ int potTwist; //the twist of the potentiometer for selecting things.
 void setup()
 {
   pinMode(A0,INPUT);
+  selectButton = Bounce();
+  pinMode(5,INPUT);
+  selectButton.attach(selectPin);
+  selectButton.interval(10);
+  
+  resetButton = Bounce();
+  resetButton.attach(resetPin);
+  resetButton.interval(10);
+  pinMode(6,INPUT);
+  pinMode(10,OUTPUT);
   
    // Start the Arduino hardware serial port at 9600 baud
   Serial.begin(9600);
@@ -73,8 +90,12 @@ void setup()
 
 void loop()
 {
-  updateValues(); //reads in the buttons and potentiometer values
-  
+  updateValues();
+  while(true)
+  {
+    updateValues();
+     checkMenu(); 
+  }
     // This sketch displays information every time a new sentence is correctly encoded.
    while (gpsSerial.available() > 0)
     if (gps.encode(gpsSerial.read())){
@@ -86,9 +107,14 @@ void loop()
       showX(pixels.Color(brightness,0,0));
     else
     {
+      if(curMenu > 0)
       checkMenu();
+      else{
       updateBrightness();
-    }
+      run();
+      }
+        
+  }
     
     
   // If 5000 milliseconds pass and there are no characters coming in
@@ -102,38 +128,57 @@ void loop()
 
 boolean pressedReset()
 {
- return false; 
+ return resetButton.fell(); 
 }
 
 boolean pressedSelect()
 {
- return false; 
+ return selectButton.fell(); 
+}
+
+void run()
+{
+ showDirection();
+ pixels.show(); 
 }
 
 void updateValues()
 {
   potTwist = analogRead(A0);
+  selectButton.update();
+  resetButton.update();
 }
 
 void checkMenu()
 {
-   int temp = round((potTwist+1)/128);
-   if(pressedSelect()==true){
-   selectMenu(temp);
-   }else if(pressedReset()==true)
-   {
+   int temp = round((potTwist+1)/(1024/4)); 
+   Serial.println(curMenu);
+   if(pressedSelect()){
+     selectMenu(temp+curMenu);
+   }else if(pressedReset())
     reset(); 
-   }
 }
 
 void selectMenu(int selection)
 {
+ // curMenu = curMenu + (4 * selection) + 1;
+  
  switch (selection){
   case 0 : curMenu = TREASURE; break;// sets the current menu to the value of treasure hunt 
   case 1 : curMenu = EXER; break;
   case 2 : curMenu = OPTIONS; break;
-  default : break;
+  case 3 : curMenu = 4; break;
+  case 4 : startTreasure(); break;
+  default : Serial.println("Error"); break;
  }
+}
+
+void startTreasure()
+{
+ curMenu = -1;
+ int r = random(0,4);
+ destLat = hardLat[r];
+ destLng = hardLng[r];
 }
 
 void reset()
