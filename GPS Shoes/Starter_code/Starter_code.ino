@@ -14,7 +14,9 @@ int TXPin = 3;
 
 const double EIFFEL_TOWER_LAT = 48.85826;
 const double EIFFEL_TOWER_LNG = 2.294516;
-
+const int TREASURE = 1;
+const int EXER = 2;
+const int OPTIONS = 3;
 // The Skytaq EM-506 GPS module included in the GPS Shield Kit
 // uses 4800 baud by default
 int GPSBaud = 4800;
@@ -29,10 +31,20 @@ Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, NEOPIN, NEO_GRB + NEO_KH
 double destLat;
 double destLng;
 int brightness = 150;
-int v, v2;
+int curMenu = 0; // the current menu value
+int potTwist; //the twist of the potentiometer for selecting things.
+
+/* 0 is top menu, 
+1 is Treasure Hunt, 
+2 is Exercise tracker,
+3 is Options, and -1 means the game is running.
+*/
+
 
 void setup()
 {
+  pinMode(A0,INPUT);
+  
    // Start the Arduino hardware serial port at 9600 baud
   Serial.begin(9600);
 
@@ -48,8 +60,6 @@ void setup()
   destLat = 48.85826;
   destLng = 2.294516;
   pixels.begin();
-  v = 0;
-  v2 = 0;
   for(int i = 0; i < 10;i++)
   {
    showArrow(i,pixels.Color(0,0,150));
@@ -62,20 +72,9 @@ void setup()
 }
 
 void loop()
-{ 
+{
+  updateValues(); //reads in the buttons and potentiometer values
   
-  for(int i = 0; i < 8 ; i++)
-  {
-   for(int j = 0; j < 8; j++)
-     {
-      v = i; v2 = j;
-      showDirection();
-      pixels.show();
-      delay(500);
-      pixels.clear();
-     }  
-  }
-  /*
     // This sketch displays information every time a new sentence is correctly encoded.
    while (gpsSerial.available() > 0)
     if (gps.encode(gpsSerial.read())){
@@ -84,10 +83,11 @@ void loop()
     }
     
     if(gps.satellites.value() == 0)
-      showX(pixels.Color(brightness,0,0);
+      showX(pixels.Color(brightness,0,0));
     else
     {
-     updateBrightness();
+      checkMenu();
+      updateBrightness();
     }
     
     
@@ -97,9 +97,48 @@ void loop()
   {
     Serial.println(F("No GPS detected"));
     while(true);
-  }
-  */
-  
+  } 
+}
+
+boolean pressedReset()
+{
+ return false; 
+}
+
+boolean pressedSelect()
+{
+ return false; 
+}
+
+void updateValues()
+{
+  potTwist = analogRead(A0);
+}
+
+void checkMenu()
+{
+   int temp = round((potTwist+1)/128);
+   if(pressedSelect()==true){
+   selectMenu(temp);
+   }else if(pressedReset()==true)
+   {
+    reset(); 
+   }
+}
+
+void selectMenu(int selection)
+{
+ switch (selection){
+  case 0 : curMenu = TREASURE; break;// sets the current menu to the value of treasure hunt 
+  case 1 : curMenu = EXER; break;
+  case 2 : curMenu = OPTIONS; break;
+  default : break;
+ }
+}
+
+void reset()
+{
+ curMenu = 0; //sets the menu back to the top level menu 
 }
 
 void updateBrightness()
@@ -141,6 +180,50 @@ void showArrow(int dir, uint32_t c)
   default : showX(c); break;
   }
 }
+
+//h is current heading
+int getDirection()
+{
+  int h = getHeading();
+  if(h == 8)
+    h = 0;
+  
+  int temp = h - headingToDest();
+  if(temp <= 0)
+  {
+   return abs(temp); 
+  }else
+  return abs(temp - 8);
+}
+
+/**
+returns a numerical destination
+0 or 8 -> N
+1 -> NE
+2 -> E
+3 -> SE
+4 -> S
+5 -> SW
+6 -> W
+7 -> NW
+*/
+int getHeading()
+{
+ double temp = gps.course.deg();
+  return round(temp/ 45);
+
+}
+
+int headingToDest()
+{
+ double heading = gps.courseTo(
+    gps.location.lat(),
+    gps.location.lng(),
+    destLat,
+    destLng);
+   return round(heading/45); 
+}
+
   
 void up(uint32_t color){
  pixels.setPixelColor(2,color); 
@@ -277,55 +360,6 @@ void showCross(uint32_t color){
  pixels.setPixelColor(7,color);
  pixels.setPixelColor(17,color); 
  pixels.setPixelColor(22,color);
-}
-  
-
-//h is current heading
-int getDirection()
-{
-  int h = getHeading();
-  if(h == 8)
-    h = 0;
-  
-  int temp = h - headingToDest();
-  if(temp <= 0)
-  {
-   return abs(temp); 
-  }else
-  return abs(temp - 8);
-}
-
-/**
-returns a numerical destination
-0 or 8 -> N
-1 -> NE
-2 -> E
-3 -> SE
-4 -> S
-5 -> SW
-6 -> W
-7 -> NW
-*/
-int getHeading()
-{/*
- double temp = gps.course.deg();
-  return round(temp/ 45);
-*/
-
-return v;
-}
-
-int headingToDest()
-{
-  return v2;
-  /*
- double heading = gps.courseTo(
-    gps.location.lat(),
-    gps.location.lng(),
-    destLat,
-    destLng);
-   return round(heading/45); 
-*/
 }
 
 void displayInfo()
