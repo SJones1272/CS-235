@@ -36,6 +36,7 @@ double destLat;
 double destLng;
 int brightness = 150;
 int curMenu = 0; // the current menu value
+int curMode = 0; //0 is menu
 int potTwist; //the twist of the potentiometer for selecting things.
 
 Bounce selectButton;
@@ -110,9 +111,9 @@ void loop()
       if(curMenu > 0)
       checkMenu();
       else{
-      updateBrightness();
       run();
       }
+      updateBrightness();
         
   }
     
@@ -140,13 +141,26 @@ void run()
 {
  showDirection();
  pixels.show(); 
+ if(atDest())
+ endMode();
 }
 
+boolean atDest()
+{
+ return (abs(gps.location.lat() - destLat) < 0.001) && (abs(gps.longitue - destLng) < 0.001);
+}
 void updateValues()
 {
   potTwist = analogRead(A0);
   selectButton.update();
   resetButton.update();
+}
+
+void endMode()
+{
+ switch (curMode)
+  case TREASUREMODE : endTreasure(); break;
+  case EXERCISEMODE : endExercise(); break;
 }
 
 void checkMenu()
@@ -175,6 +189,7 @@ void selectMenu(int selection)
 
 void startTreasure()
 {
+ u32_int startTime = gps.time.value();
  curMenu = -1;
  int r = random(0,4);
  destLat = hardLat[r];
