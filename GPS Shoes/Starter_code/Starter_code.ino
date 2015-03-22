@@ -25,8 +25,8 @@ const int OPTIONS = 3;
 //Library 34.285816, -85.189213
 //Ford Reflecting Pool 34.295339, -85.187894
 //Jones 34.285776, -85.186251
-float hardLat[4] = {34.289125, 34.285816, 34.295339, 34.285776};
-float hardLng[4] = {-85.187522, -85.189213, -85.187894, -85.186251}; 
+double hardLat[4] = {34.289125, 34.285816, 34.295339, 34.285776};
+double hardLng[4] = {-85.187522, -85.189213, -85.187894, -85.186251}; 
 // The Skytaq EM-506 GPS module included in the GPS Shield Kit
 // uses 4800 baud by default
 int GPSBaud = 4800;
@@ -38,8 +38,8 @@ SoftwareSerial gpsSerial(RXPin, TXPin);
 
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, NEOPIN, NEO_GRB + NEO_KHZ800);
 
-float destLat;
-float destLng;
+double destLat;
+double destLng;
 int brightness = 150;
 int curMenu = 0; // the current menu value
 int potTwist; //the twist of the potentiometer for selecting things.
@@ -88,34 +88,19 @@ void setup()
   }
  
   pixels.clear(); 
-for(int i = 0; i < 5000; i++){
+}
+
+void loop()
+{
   while (gpsSerial.available() > 0)
   //Serial.print(gps.encode(gpsSerial.read()));
     if (gps.encode(gpsSerial.read())){
       displayInfo();
     }
-    delay(1);
-  }
-
-}
-
-void loop()
-{ while (gpsSerial.available() > 0)
-    if (gps.encode(gpsSerial.read())){
-      displayInfo();
-      pixels.clear();
-      
-      if(gps.satellites.value() == 0)
+    
+    if(gps.satellites.value() == 0)
       showX(pixels.Color(brightness,0,0));
-      
-      if(curMenu == -1)
-      run();
-      pixels.show();
-    }
-  
-    
-    
-    /*else
+    else
     {
       if(curMenu > 0)
       checkMenu();
@@ -123,26 +108,59 @@ void loop()
       updateBrightness();
       run();
       }
-      
         
   }
-  */
+  
   //Serial.println(gps.satellites.value());
   
+  //pixels.clear();
   /*
   while(curMenu == 0){
    checkMenu();
   }
   */
+  
+  /*
+  while(gps.satellites.value() <= 0){
+    //Serial.println(gps.satellites.value());
+    pixels.clear();
+    showX(pixels.Color(150,0,0));
+    pixels.show();
+  }
+  
   if(curMenu == 1){
     startTreasure();
+    
+    pixels.clear();
+   for(int i = 0; i<25; i++){
+    pixels.setPixelColor(i, pixels.Color(150, 0, 0)); 
+   }
+   pixels.show();
+   
+   
   }
   else if(curMenu == 2){
+    pixels.clear();
+   for(int i = 0; i<25; i++){
+    pixels.setPixelColor(i, pixels.Color(0, 150, 0)); 
+   }
+   pixels.show();
+  }
+  //logic for running the game
+  else if(curMenu == -1){
+     if(atDest()){
+      //show some won symbol/time
+      //endMode(); 
+     }
+     else{
+      run();
+      
+     }
   }
   else{
    //throw error 
   }
-  
+  */
     // This sketch displays information every time a new sentence is correctly encoded.
    
   // If 5000 milliseconds pass and there are no characters coming in
@@ -169,7 +187,6 @@ boolean pressedSelect()
 //needs to be updated
 void run()
 {
-  pixels.clear();
  showDirection();
  pixels.show(); 
 }
@@ -222,8 +239,8 @@ void startTreasure()
  int r = random(0,4);
  destLat = hardLat[r];
  destLng = hardLng[r];
- Serial.print("Dest lat: "); Serial.println(destLat,6);
- Serial.print("Dest lng: "); Serial.println(destLng,6);
+ Serial.println("Dest lat: "); Serial.print(destLat);
+ Serial.println("Dest lng: "); Serial.print(destLng);
 }
 
 void reset()
@@ -271,17 +288,15 @@ void showArrow(int dir, uint32_t c)
   default : showX(c); break;
   }
 }
-
+/*
 void endMode()
 {
-  /*
  switch (curMode){
-  case 1 : endTreasure(); break;
-  case 2 : endExercise(); break;
+  case TREASUREMODE : endTreasure(); break;
+  case EXERCISEMODE : endExercise(); break;
  }
- */
 }
-
+*/
 //h is current heading
 int getDirection()
 {
