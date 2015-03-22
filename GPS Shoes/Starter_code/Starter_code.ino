@@ -1,5 +1,4 @@
 #include <Bounce2.h>
-
 #include <TinyGPS++.h>
 #include <Adafruit_NeoPixel.h>
 #include <SoftwareSerial.h>
@@ -17,10 +16,17 @@ int TXPin = 3;
 
 const double EIFFEL_TOWER_LAT = 48.85826;
 const double EIFFEL_TOWER_LNG = 2.294516;
+
 const int TREASURE = 1;
 const int EXER = 2;
 const int OPTIONS = 3;
 
+//Krannert 34.289125, -85.187522
+//Library 34.285816, -85.189213
+//Ford Reflecting Pool 34.295339, -85.187894
+//Jones 34.285776, -85.186251
+double hardLat[4] = {34.289125, 34.285816, 34.295339, 34.285776};
+double hardLng[4] = {-85.187522, -85.189213, -85.187894, -85.186251}; 
 // The Skytaq EM-506 GPS module included in the GPS Shield Kit
 // uses 4800 baud by default
 int GPSBaud = 4800;
@@ -36,7 +42,6 @@ double destLat;
 double destLng;
 int brightness = 150;
 int curMenu = 0; // the current menu value
-int curMode = 0; //0 is menu
 int potTwist; //the twist of the potentiometer for selecting things.
 
 Bounce selectButton;
@@ -47,12 +52,13 @@ Bounce resetButton;
 2 is Exercise tracker,
 3 is Options, and -1 means the game is running.
 */
-
-
 void setup()
 {
+  curMenu = 1;
+  //potentiometer pin
   pinMode(A0,INPUT);
   selectButton = Bounce();
+  //?????
   pinMode(5,INPUT);
   selectButton.attach(selectPin);
   selectButton.interval(10);
@@ -65,18 +71,13 @@ void setup()
   
    // Start the Arduino hardware serial port at 9600 baud
   Serial.begin(9600);
-
   // Start the software serial port at the GPS's default baud
   gpsSerial.begin(GPSBaud);
-
-  Serial.println(F("DeviceExample.ino"));
-  Serial.println(F("A simple demonstration of TinyGPS++ with an attached GPS module"));
-  Serial.print(F("Testing TinyGPS++ library v. ")); Serial.println(TinyGPSPlus::libraryVersion());
-  Serial.println(F("by Mikal Hart"));
-  Serial.println(); 
   
   destLat = 48.85826;
   destLng = 2.294516;
+  
+  //testing stuff
   pixels.begin();
   for(int i = 0; i < 10;i++)
   {
@@ -91,18 +92,13 @@ void setup()
 
 void loop()
 {
-  updateValues();
-  while(true)
-  {
-    updateValues();
-     checkMenu(); 
-  }
-    // This sketch displays information every time a new sentence is correctly encoded.
-   while (gpsSerial.available() > 0)
+  while (gpsSerial.available() > 0){
+  Serial.print(gps.encode(gpsSerial.read()));
     if (gps.encode(gpsSerial.read())){
       displayInfo();
-      Serial.println(gps.satellites.value());
+      //Serial.println(gps.satellites.value());
     }
+  }
     
     if(gps.satellites.value() == 0)
       showX(pixels.Color(brightness,0,0));
@@ -111,13 +107,62 @@ void loop()
       if(curMenu > 0)
       checkMenu();
       else{
+      updateBrightness();
       run();
       }
-      updateBrightness();
         
   }
-    
-    
+  
+  Serial.println(gps.satellites.value());
+  
+  pixels.clear();
+  while(curMenu == 0){
+   checkMenu();
+  }
+  
+  /*
+  while(gps.satellites.value() <= 0){
+    //Serial.println(gps.satellites.value());
+    pixels.clear();
+    showX(pixels.Color(150,0,0));
+    pixels.show();
+  }
+  */
+  if(curMenu == 1){
+    startTreasure();
+    /*
+    pixels.clear();
+   for(int i = 0; i<25; i++){
+    pixels.setPixelColor(i, pixels.Color(150, 0, 0)); 
+   }
+   pixels.show();
+   */
+   
+  }
+  else if(curMenu == 2){
+    pixels.clear();
+   for(int i = 0; i<25; i++){
+    pixels.setPixelColor(i, pixels.Color(0, 150, 0)); 
+   }
+   pixels.show();
+  }
+  //logic for running the game
+  else if(curMenu == -1){
+     if(atDest()){
+      //show some won symbol/time
+      //endMode(); 
+     }
+     else{
+      run();
+      
+     }
+  }
+  else{
+   //throw error 
+  }
+  
+    // This sketch displays information every time a new sentence is correctly encoded.
+   
   // If 5000 milliseconds pass and there are no characters coming in
   // over the software serial port, show a "No GPS detected" error
   if (millis() > 5000 && gps.charsProcessed() < 10)
@@ -137,18 +182,16 @@ boolean pressedSelect()
  return selectButton.fell(); 
 }
 
+
+
+//needs to be updated
 void run()
 {
  showDirection();
  pixels.show(); 
- if(atDest())
- endMode();
 }
 
-boolean atDest()
-{
- return (abs(gps.location.lat() - destLat) < 0.001) && (abs(gps.longitue - destLng) < 0.001);
-}
+//updates buttons and potentiometer
 void updateValues()
 {
   potTwist = analogRead(A0);
@@ -156,16 +199,12 @@ void updateValues()
   resetButton.update();
 }
 
-void endMode()
-{
- switch (curMode)
-  case TREASUREMODE : endTreasure(); break;
-  case EXERCISEMODE : endExercise(); break;
-}
-
+//needs to be reworked
 void checkMenu()
 {
+  updateValues();
    int temp = round((potTwist+1)/(1024/4)); 
+   Serial.println(temp);
    Serial.println(curMenu);
    if(pressedSelect()){
      selectMenu(temp+curMenu);
@@ -186,14 +225,22 @@ void selectMenu(int selection)
   default : Serial.println("Error"); break;
  }
 }
+boolean atDest()
+{
+ return ((abs(gps.location.lat() - destLat) < 0.001) && (abs(gps.location.lng() - destLng) < 0.001));
+}
 
+//treasure hunt game
 void startTreasure()
 {
- u32_int startTime = gps.time.value();
+  //look into better way to get time
+ //u32_int startTime = gps.time.value();
  curMenu = -1;
  int r = random(0,4);
  destLat = hardLat[r];
  destLng = hardLng[r];
+ Serial.println("Dest lat: "); Serial.print(destLat);
+ Serial.println("Dest lng: "); Serial.print(destLng);
 }
 
 void reset()
@@ -201,6 +248,7 @@ void reset()
  curMenu = 0; //sets the menu back to the top level menu 
 }
 
+//changes brightness based on time
 void updateBrightness()
 {
   int time = gps.time.hour();
@@ -226,7 +274,7 @@ void showDirection()
 // 7 = up left
 void showArrow(int dir, uint32_t c)
 {
-  Serial.println(dir);
+  //Serial.println(dir);
   switch (dir) {
   case 0 : up(c); break;
   case 1 : upRight(c); break;
@@ -240,7 +288,15 @@ void showArrow(int dir, uint32_t c)
   default : showX(c); break;
   }
 }
-
+/*
+void endMode()
+{
+ switch (curMode){
+  case TREASUREMODE : endTreasure(); break;
+  case EXERCISEMODE : endExercise(); break;
+ }
+}
+*/
 //h is current heading
 int getDirection()
 {
@@ -283,6 +339,19 @@ int headingToDest()
     destLng);
    return round(heading/45); 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   
 void up(uint32_t color){
@@ -421,6 +490,7 @@ void showCross(uint32_t color){
  pixels.setPixelColor(17,color); 
  pixels.setPixelColor(22,color);
 }
+
 
 void displayInfo()
 {
