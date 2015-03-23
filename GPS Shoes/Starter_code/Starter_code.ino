@@ -214,7 +214,8 @@ boolean pressedSelect()
 //needs to be updated
 void run()
 {
-  if(atDest()){
+  Serial.println(atDest());
+if(atDest()){
    curMenu = 0;
    int x = 0;
    while(x < 4){
@@ -224,11 +225,13 @@ void run()
    x++;
    delay(1000);
    }
-   
-  }
+}
+ else{
  pixels.clear();
  showDirection();
  pixels.show(); 
+ }
+ 
 }
 
 //updates buttons and potentiometer
@@ -244,7 +247,7 @@ void checkMenu()
 {
   updateValues();
    int temp = ceil((potTwist+1)/(1024/6)); 
-   //Serial.println(temp);
+   Serial.println(temp);
 
   pixels.clear();
   switch (temp) {
@@ -305,7 +308,8 @@ void selectMenu(int selection)
 }
 boolean atDest()
 {
- return ((abs(gps.location.lat() - destLat) < 0.001) && (abs(gps.location.lng() - destLng) < 0.001));
+ //return ((abs(gps.location.lat() - destLat) < 0.0001) && (abs(gps.location.lng() - destLng) < 0.0001));
+ return (gps.location.lat() == destLat && gps.location.lng() == destLng);
 }
 
 //treasure hunt game
@@ -315,8 +319,8 @@ void startTreasure()
  //u32_int startTime = gps.time.value();
  curMenu = -1;
  int r = random(0,4);
- destLat = 34.295339;
- destLng = -85.187894;
+ destLat = hardLat[r];
+ destLng = hardLng[r];
  Serial.print("Dest lat: "); Serial.println(destLat,6);
  Serial.print("Dest lng: "); Serial.println(destLng,6);
 }
