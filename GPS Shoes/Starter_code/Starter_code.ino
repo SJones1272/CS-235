@@ -8,7 +8,7 @@
 
 #define NEOPIN 6 // The control pin for the neopixels
 #define selectPin 9
-#define resetPin 7
+#define resetPin 13
 // Choose two Arduino pins to use for software serial
 // The GPS Shield uses D2 and D3 by default when in DLINE mode
 int RXPin = 2;
@@ -19,7 +19,6 @@ const double EIFFEL_TOWER_LNG = 2.294516;
 
 const int TREASURE = 1;
 const int EXER = 2;
-const int OPTIONS = 3;
 
 //Krannert 34.289125, -85.187522
 //Library 34.285816, -85.189213
@@ -54,20 +53,21 @@ Bounce resetButton;
 */
 void setup()
 {
-  curMenu = 1;
+  curMenu = 0;
   //potentiometer pin
   pinMode(A0,INPUT);
   selectButton = Bounce();
   //?????
-  pinMode(5,INPUT);
+  //pinMode(5,INPUT);
   selectButton.attach(selectPin);
   selectButton.interval(10);
   
+  
   resetButton = Bounce();
   resetButton.attach(resetPin);
-  resetButton.interval(10);
-  pinMode(6,INPUT);
-  pinMode(10,OUTPUT);
+  resetButton.interval(5);
+ // pinMode(6,INPUT);
+  //pinMode(10,OUTPUT);
   
    // Start the Arduino hardware serial port at 9600 baud
   Serial.begin(9600);
@@ -79,18 +79,24 @@ void setup()
   
   //testing stuff
   pixels.begin();
+  
+  
   for(int i = 0; i < 10;i++)
   {
-   showArrow(i,pixels.Color(0,0,150));
+   showArrow(i,pixels.Color(0,150,0));
   pixels.show();
   delay(500);
  pixels.clear(); 
   }
- 
+
   pixels.clear(); 
-for(int i = 0; i < 5000; i++){
+  
+for(int i = 0; i < 1000; i++){
   while (gpsSerial.available() > 0)
-  //Serial.print(gps.encode(gpsSerial.read()));
+  Serial.print(gps.encode(gpsSerial.read()));
+  pixels.clear();
+  showX(pixels.Color(0,brightness, 0));
+  pixels.show();
     if (gps.encode(gpsSerial.read())){
       displayInfo();
     }
@@ -100,53 +106,43 @@ for(int i = 0; i < 5000; i++){
 }
 
 void loop()
-{ while (gpsSerial.available() > 0)
+{ 
+  
+  while (gpsSerial.available() > 0)
     if (gps.encode(gpsSerial.read())){
       displayInfo();
       pixels.clear();
-      
-      if(gps.satellites.value() == 0)
-      showX(pixels.Color(brightness,0,0));
-      
-      if(curMenu == -1)
-      run();
-      pixels.show();
-    }
-  
-    
-    
-    /*else
-    {
-      if(curMenu > 0)
-      checkMenu();
-      else{
-      updateBrightness();
-      run();
+   
+      updateValues();
+      //Serial.println("Reset: " ); Serial.print(pressedReset());
+      if(pressedReset()){
+       reset(); 
       }
       
-        
-  }
-  */
-  //Serial.println(gps.satellites.value());
+      //treasure hunt
+      if(curMenu == -1)
+        run();      
+      //party mode
+      else if(curMenu == -2)
+        partyMode();
+      //signal mode
+      else if(curMenu == -3)
+       signalMode(); 
+    }
   
-  /*
+  
   while(curMenu == 0){
    checkMenu();
   }
-  */
-  if(curMenu == 1){
-    startTreasure();
-  }
-  else if(curMenu == 2){
-  }
-  else{
-   //throw error 
+  
+  switch(curMenu){
+    case 1 : startTreasure(); break;
+    case 2 : startExercise(); break;
+    case 3 : startParty(); break;
+    case 4 : startSignals(); break;
+    //no case 5 yet
   }
   
-    // This sketch displays information every time a new sentence is correctly encoded.
-   
-  // If 5000 milliseconds pass and there are no characters coming in
-  // over the software serial port, show a "No GPS detected" error
   if (millis() > 5000 && gps.charsProcessed() < 10)
   {
     Serial.println(F("No GPS detected"));
@@ -154,9 +150,58 @@ void loop()
   } 
 }
 
+void startParty(){
+  curMenu = -2;
+  int x = 0;
+    while(x < 3){
+  pixels.clear();
+  for(int i = 0; i<25; i++){
+   pixels.setPixelColor(i, pixels.Color(0, 255, 0));
+  }
+  pixels.show();
+  x++;
+  delay(300);
+  }
+  pixels.clear();
+  
+}
+
+void partyMode(){
+  pixels.clear();
+  for(int i = 0; i<25; i++){
+   pixels.setPixelColor(i, pixels.Color(random(0,255), random(0,255), random(0,255))); 
+  }
+  pixels.show();
+}
+
+void startSignals(){
+  curMenu = -3;
+ 
+}
+
+void signalMode(){
+  pixels.clear();
+  for(int i = 0; i<25; i++){
+   pixels.setPixelColor(i, pixels.Color(255, 0, 0)); 
+  }
+  pixels.show();
+  delay(1500);
+  pixels.clear();
+  for(int x = 0; x<25; x++){
+   pixels.setPixelColor(x, pixels.Color(255, 102, 0)); 
+  }
+  pixels.show();
+  delay(1500);
+  
+}
+
+void startExercise(){
+  startTreasure();
+}
+
 boolean pressedReset()
 {
- return resetButton.fell(); 
+ return resetButton.rose(); 
 }
 
 boolean pressedSelect()
@@ -169,7 +214,19 @@ boolean pressedSelect()
 //needs to be updated
 void run()
 {
-  pixels.clear();
+  if(atDest()){
+   curMenu = 0;
+   int x = 0;
+   while(x < 4){
+   for(int i = 0; i<25; i++){
+    pixels.setPixelColor(i, pixels.Color(0,0,brightness));
+   } 
+   x++;
+   delay(1000);
+   }
+   
+  }
+ pixels.clear();
  showDirection();
  pixels.show(); 
 }
@@ -186,9 +243,45 @@ void updateValues()
 void checkMenu()
 {
   updateValues();
-   int temp = round((potTwist+1)/(1024/4)); 
-  // Serial.println(temp);
-  // Serial.println(curMenu);
+   int temp = ceil((potTwist+1)/(1024/6)); 
+   //Serial.println(temp);
+
+  pixels.clear();
+  switch (temp) {
+  case 0 :  for(int i = 0; i< 25; i++){
+     pixels.setPixelColor(i, pixels.Color(0,255,min(255, (i*5)+5))); 
+    } break;
+  case 1 : showT(); break;
+  case 2 : showE(); break;
+  case 3 : showP(); break;
+  case 4 : showW(); break;
+  case 5 : showT(); break;
+  case 6 : showT(); break;
+
+  }
+  pixels.show();
+  /*
+  else if(temp == 1){
+   pixels.clear();
+   showT();
+   pixels.show(); 
+  }
+  else if(temp == 2){
+   pixels.clear();
+   showE();
+   pixels.show(); 
+  }
+  else if(temp == 3){
+   pixels.clear();
+   showP();
+   pixels.show(); 
+  }
+  else if(temp == 6){
+   pixels.clear();
+   showO();
+   pixels.show(); 
+  }
+  */
    if(pressedSelect()){
      selectMenu(temp+curMenu);
    }else if(pressedReset())
@@ -200,11 +293,13 @@ void selectMenu(int selection)
  // curMenu = curMenu + (4 * selection) + 1;
   
  switch (selection){
-  case 0 : curMenu = TREASURE; break;// sets the current menu to the value of treasure hunt 
-  case 1 : curMenu = EXER; break;
-  case 2 : curMenu = OPTIONS; break;
-  case 3 : curMenu = 4; break;
-  case 4 : startTreasure(); break;
+  case 0 : curMenu = 0; break;// sets the current menu to the value of treasure hunt 
+  case 1 : curMenu = 1; break;
+  case 2 : curMenu = 2; break;
+  case 3 : curMenu = 3; break;
+  case 4 : curMenu = 4; break;
+  case 5 : curMenu = 1; break;
+  case 6 : curMenu = 6; break;
   default : Serial.println("Error"); break;
  }
 }
@@ -220,8 +315,8 @@ void startTreasure()
  //u32_int startTime = gps.time.value();
  curMenu = -1;
  int r = random(0,4);
- destLat = hardLat[r];
- destLng = hardLng[r];
+ destLat = 34.295339;
+ destLng = -85.187894;
  Serial.print("Dest lat: "); Serial.println(destLat,6);
  Serial.print("Dest lng: "); Serial.println(destLng,6);
 }
@@ -447,6 +542,76 @@ void downRight(uint32_t color)
  pixels.setPixelColor(5,color); 
  pixels.setPixelColor(14,color);
  pixels.setPixelColor(2,color); 
+}
+
+void showT(){
+ pixels.setPixelColor(24,pixels.Color(255,102,0));
+ pixels.setPixelColor(23,pixels.Color(255,102,0));
+ pixels.setPixelColor(22,pixels.Color(255,102,0));
+ pixels.setPixelColor(21,pixels.Color(255,102,0));
+ pixels.setPixelColor(20,pixels.Color(255,102,0));
+ 
+ pixels.setPixelColor(17,pixels.Color(255,102,0));
+ pixels.setPixelColor(12,pixels.Color(255,102,0)); 
+ pixels.setPixelColor(7,pixels.Color(255,102,0));
+ pixels.setPixelColor(2,pixels.Color(255,102,0)); 
+  
+}
+
+void showE(){
+ pixels.setPixelColor(24,pixels.Color(255,119,255));
+ pixels.setPixelColor(23,pixels.Color(255,119,255));
+ pixels.setPixelColor(22,pixels.Color(255,119,255));
+ pixels.setPixelColor(21,pixels.Color(255,119,255));
+ pixels.setPixelColor(20,pixels.Color(255,119,255));
+ 
+ pixels.setPixelColor(19,pixels.Color(255,119,255));
+ pixels.setPixelColor(10,pixels.Color(255,119,255));
+ pixels.setPixelColor(9,pixels.Color(255,119,255));
+ pixels.setPixelColor(0,pixels.Color(255,119,255));
+ 
+ pixels.setPixelColor(11,pixels.Color(255,119,255));
+ pixels.setPixelColor(12,pixels.Color(255,119,255));
+ pixels.setPixelColor(1,pixels.Color(255,119,255));
+ pixels.setPixelColor(2,pixels.Color(255,119,255));
+ pixels.setPixelColor(3,pixels.Color(255,119,255));
+ pixels.setPixelColor(4,pixels.Color(255,119,255));
+}
+
+void showW(){
+ pixels.setPixelColor(20,pixels.Color(255,0,0));
+ pixels.setPixelColor(19,pixels.Color(255,0,0));
+ pixels.setPixelColor(10,pixels.Color(255,0,0));
+ pixels.setPixelColor(9,pixels.Color(255,0,0));
+ 
+ pixels.setPixelColor(24,pixels.Color(255,0,0));
+ pixels.setPixelColor(15,pixels.Color(255,0,0));
+ pixels.setPixelColor(14,pixels.Color(255,0,0));
+ pixels.setPixelColor(5,pixels.Color(255,0,0));
+ 
+ pixels.setPixelColor(1,pixels.Color(255,0,0));
+ pixels.setPixelColor(2,pixels.Color(255,0,0));
+ pixels.setPixelColor(3,pixels.Color(255,0,0));
+ pixels.setPixelColor(7,pixels.Color(255,0,0));
+ pixels.setPixelColor(12,pixels.Color(255,0,0));
+
+}
+
+void showP(){
+ pixels.setPixelColor(20,pixels.Color(134,1,175));
+ pixels.setPixelColor(19,pixels.Color(134,1,175));
+ pixels.setPixelColor(10,pixels.Color(134,1,175));
+ pixels.setPixelColor(9,pixels.Color(134,1,175));
+ pixels.setPixelColor(0,pixels.Color(134,1,175));
+ 
+ pixels.setPixelColor(23,pixels.Color(134,1,175));
+ pixels.setPixelColor(22,pixels.Color(134,1,175));
+ pixels.setPixelColor(21,pixels.Color(134,1,175));
+ pixels.setPixelColor(16,pixels.Color(134,1,175));
+ pixels.setPixelColor(13,pixels.Color(134,1,175));
+ pixels.setPixelColor(11,pixels.Color(134,1,175));
+ pixels.setPixelColor(12,pixels.Color(134,1,175));
+
 }
 
 void showX(uint32_t color)
