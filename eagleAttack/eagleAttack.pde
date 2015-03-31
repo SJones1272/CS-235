@@ -2,20 +2,21 @@ import processing.serial.*;
 
 Player p1, p2;
 Serial myport;
-String port = "/dev/tty.usbmodem1411";
-int width = 500;
+String port = "COM3"; //"/dev/tty.usbmodem1411";
 int controller = -1;
-int height = 500;
 int hitRange = 40;
 boolean gameOver;
 //PImage sprite_sheet = loadImage("squirrelSprites.png", "png");
-
+PImage bkg;
 void setup(){
-  size(width, height);
-  
-  
-  p1 = new Player(3,loadImage("http://vignette3.wikia.nocookie.net/sims/images/4/41/Squirrel.png/revision/latest?cb=20111022014337", "png"), 0,0,3);
-  p2 = new Player(6,loadImage("eagle.png", "png"), width/2, height/2, 0);
+  bkg = loadImage("http://www.georgia.org/SiteCollectionImages/Industries/Entertainment/Camera%20Ready/Counties/Floyd/Berry%20College.jpg","jpg");
+    size(bkg.width, bkg.height);
+ PImage temp = loadImage("http://vignette3.wikia.nocookie.net/sims/images/4/41/Squirrel.png/revision/latest?cb=20111022014337", "png");
+  temp.resize(60,40);
+  PImage eagle = loadImage("eagle.png", "png");
+  eagle.resize(150,90);
+  p1 = new Player(3,temp, 0,0,3);
+  p2 = new Player(6,eagle, width/2, height/2, 0);
   
   myport = new Serial(this, port, 9600); 
   gameOver = false;
@@ -29,8 +30,8 @@ int distance(int x1, int y1,int x2,int y2){
 }
 
 void draw(){
-  background(#000000);
- if(gameOver){
+image(bkg,0,0);
+  if(gameOver){
   
   
  }
@@ -42,15 +43,13 @@ else{
   p1.setDirection(controller);  
   }
   
- p1.update();
- p2.update();
- if(distance(p1.getX(), p1.getY(), p2.getX(), p2.getY()) <= hitRange)
+ p1.update(width,height);
+ p2.update(width,height);
+ if(distance(p1.getX()+(p1.iconWidth()/2), p1.getY()+(p1.iconHeight()/2), p2.getX()+(p2.iconWidth()/2), p2.getY()+(p2.iconHeight()/2)) <= hitRange)
    gameOver = true;
    
- println(distance(p1.getX(), p1.getY(), p2.getX(), p2.getY()));  
- scale(.4);
+ println(distance(p1.getX()+(p1.iconWidth()/2), p1.getY()+(p1.iconHeight()/2), p2.getX()+(p2.iconWidth()/2), p2.getY()+(p2.iconHeight()/2)));  
  p1.draw();
- scale(1);
  p2.draw();
  
 }

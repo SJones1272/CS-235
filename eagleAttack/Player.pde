@@ -25,12 +25,12 @@ class Player{
   
  }
  
- void update(){
+ void update(int w, int h){
    switch(dir){
-    case 0 : yLoc = yLoc - speed; break;
-    case 1 : xLoc = xLoc + speed; break;
-    case 2 : xLoc = xLoc - speed; break;
-    case 3 : yLoc = yLoc + speed; break; 
+    case 0 : if(yLoc > 0 - (iconHeight()/2)){yLoc = yLoc - speed;}else{yLoc += (h+speed);} break;
+    case 1 : if(xLoc < w - (iconWidth()/2)){xLoc = xLoc + speed;}else{xLoc -= (w+speed);} break;
+    case 2 : if(xLoc > 0 - (iconWidth()/2)){xLoc = xLoc - speed;}else{xLoc += (w-speed);} break;
+    case 3 : if(yLoc < h - (iconHeight()/2)){yLoc = yLoc + speed;}else{yLoc -= (h+speed);} break; 
    }
  }
  
@@ -40,6 +40,16 @@ class Player{
  
  int getY(){
   return yLoc; 
+ }
+ 
+ int iconWidth()
+ {
+  return icon.width; 
+ }
+ 
+ int iconHeight()
+ {
+  return icon.height; 
  }
  
  void setDirection(int nd){
