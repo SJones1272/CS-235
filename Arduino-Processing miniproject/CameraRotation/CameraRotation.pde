@@ -1,11 +1,11 @@
 import processing.serial.*;
 
 int x,y,z,radius,r,g,b;
-int UP_CODE = 100;
-int LEFT_CODE = 102;
-int RIGHT_CODE = 101;
-int DOWN_CODE = 103;
-int lr = 0;
+int UP_CODE = 0;
+int LEFT_CODE = 1;
+int RIGHT_CODE = 2;
+int DOWN_CODE = 3;
+int lr = -1;
 Serial myPort;
 
 void setup()
@@ -33,16 +33,17 @@ void draw()
       // updateX();
     if(myPort.available() > 0){
       lr = myPort.read();}
- if(lr == LEFT_CODE){ //check for button L
-  x--; z=x;
- }else if(lr == RIGHT_CODE){ //check for button R
- x++; z=x;
- }else if(lr == UP_CODE){
- y++; z=y;
-}else if(lr == DOWN_CODE){
- y--; z=y;}
-
-  
+      if(lr == LEFT_CODE){ //check for button L
+        x--; z=x;
+       }else if(lr == RIGHT_CODE){ //check for button R
+       x++; z=x;
+       }else if(lr == UP_CODE){
+       y++; z=y;
+      }else if(lr == DOWN_CODE){
+       y--; z=y;}
+   /*    else
+        radius = lr; */
+ 
   popMatrix();
   fill(r,g,b);
   background(204);

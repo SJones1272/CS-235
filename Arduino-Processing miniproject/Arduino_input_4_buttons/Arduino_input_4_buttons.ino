@@ -1,8 +1,11 @@
 #include <Bounce2.h>
 const int numButtons = 4;
 Bounce b[numButtons];
+int potVal = 0;
+int timestamp = 0;
 void setup()
 {
+  pinMode(A0,INPUT);
   for(int i =0; i < numButtons; i++)
   {
     b[i] = Bounce();
@@ -14,13 +17,29 @@ void setup()
 
 void loop()
 {
+  /*
+   int valueP = potVal;
+   for( int i = 0; i < 60 ; i++)
+   {
+     int readV = analogRead(A0);
+     if(readV==potVal) break;
+     else valueP = readV;
+     delay(5);
+   }
+ int temp =  map(valueP,0,1023,100,612);
+ if(temp != potVal){
+ potVal = temp;
+ Serial.write(potVal);
+ }
+ */
+ 
   for(int i =0; i < numButtons; i++)
   b[i].update();
   
   for(int i =0; i < numButtons; i++)
   if(b[i].rose())
   {
-   Serial.write(getCode(i)); 
+   Serial.write(i); 
   }
 }
 
