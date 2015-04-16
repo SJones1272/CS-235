@@ -1,60 +1,166 @@
-byte laserByte,photoByte;
+#define numLasers 8
+byte laserByte; photoByte;
 
 int laserLatchPin, laserDataPin, laserClockPin;
-int photoLatchPin, photoDataPin, photoClockPin;
+//int photoLatchPin, photoDataPin, photoClockPin;
+int photoSelectPin; //S_0 pin for the multiplexor
+int photoDataPin, photoLatchPin; //Output wire, and OE wire
+int gameMode;
+int S_0, S_1, S_2;
+
+/* Gamemode 1 variables */
+int blinkTimeStamp = 0;
+int dodgeCount = 0;
+boolean blinking = false;
 
 void setup()
 {
   laserLatchPin = 3;
   laserDataPin = 4;
   laserClockPin = 5;
+  photoSelectPin = 6; // 7 and 8 are also select pins S_0, S_1 , S_2
+  S_0 = photoSelectPin;
+  S_1 = S_0 + 1;
+  S_2 = S_1 + 1;
   
-  photoLatchPin = 8;
-  photoDataPin = 9;
-  photoClockPin = 10;
+  photoLatchPin = 9; //OE pin
+  photoDataPin = 10; //input read pin
   laserByte = 0x00;
-  photoByte = 0xFF;
   
   Serial.begin(9600);
-  pinMode(laserLatchPin,OUTPUT);
-  pinMode(laserDataPin,OUTPUT);
-  pinMode(laserClockPin,OUTPUT);
-  pinMode(photoLatchPin,OUTPUT);
-  pinMode(photoClockPin,OUTPUT);
+  
+  for(int i = 3; i < 9;i++)
+  pinMode(i,OUTPUT);
+  
   pinMode(photoDataPin,INPUT);
+
+  gameMode = 0; //start the menu option
 }
 
 void loop()
 {
   checkLasers(); //read in the new values for the resistors
   writeLasers(); //write out the laser states (if changed)
+  if(gameMode > 0)
+  runGame(gameMode);
+  else
+  //runMenu();
+  
   
   for(int i = 0; i < 8; i++)
   if(nthBit(photoByte,i)==1)
-  Serial.println(i);
+  Serial.println(i); // laser blocked at i
 }
+
+void runGame(int game){runBaseGame(); //for adding more gamemodes}
+
+void runBaseGame()
+{
+  int curTime = millis();
+   if(blinking && curTime - blinkTimeStamp <= 5000 && (blinkTimeStamp != 0))
+   {
+     countDown(curTime);
+   }else{
+     if(anyBlocked())
+     {
+       //failure animation, then 
+       // gameOver(); or lives--;
+     }else
+     {
+       //Good dodge animation, generate new random lasers
+       randomLasers(floor(dodgeCount/3));
+     }
+   }
+ }
+
+void randomLasers(int i)
+{
+ int baseDiff = 2;
+ int numRand = 2 + i;
+ 
+ if(numRand > 8)
+ numRand = 8;
+ 
+ clearLasers();
+ 
+ int rand[] = {0,0,0,0,0,0,0,0};
+ 
+  for(int j =0; j < numRand; j++)
+ {
+   int randomN = round(random(0,8));
+   boolean same = false;
+   for(int k = 0; k < j; k++)
+   {
+     if(rand[k] == randomN)
+     same = true;
+   }
+   if(same)
+   j--;
+   else
+   rand[j] = randomN;
+ }
+ 
+ for(int j = 0; j < numRand;j++)
+ {
+  setLaser(rand[j],true); 
+ }
+}
+
+void clearLasers(){for(int i = 0; i < numLasers; i++){setLaser(i,false);}}
 
 int nthBit(byte b, int n)
 {
- return b & (1 << n);
+  if((b & (1 << n)) > 0) return 1;
+  else return 0;
 }
 
-byte setNthBit(byte b, int n)
+byte setBit(byte b, int n,boolean value)
 {
- return b | (1 << n); 
+  if(value)
+   return b | (1 << n); 
+  else
+   return b & !(1 << n);
 }
 
-void setLaser(int i)
+void setLaser(int i,boolean on){laserByte = setBit(laserByte,i,on);}
+boolean isBlocked(int n){return (nthBit(photoByte,n) == 1);}
+
+boolean anyBlocked()
 {
-  laserByte = setNthBit(laserByte,i);
+ for(int i = 0; i < numLasers;i++)
+  if(isBlocked(i))
+    return false;
+  return true;
 }
 
 void checkLasers()
 {
- digitalWrite(photoLatchPin,HIGH);
+ digitalWrite(photoLatchPin,LOW); //Enables output to the arduin
+ /*
  delayMicroseconds(20);
  digitalWrite(photoLatchPin,LOW); 
  photoByte = shiftIn(photoDataPin,photoClockPin);
+ */
+ photoByte = readRecs();
+ digitalWrite(photoLatchPin,HIGH);
+}
+
+byte readRecs()
+{
+   byte b = 0x00;
+   for(int i = 0; i < 8; i++)
+   setBit(b,i,(readMultiplex(i)==1));
+
+   return b;
+}
+
+int readMultiplex(int i)
+{
+  digitalWrite(S_0,nthBit(i,0));
+  digitalWrite(S_1,nthBit(i,1));
+  digitalWrite(S_2,nthBit(i,2));
+  
+  return digitalRead(photoDataPin);
 }
 
 void writeLasers()
@@ -64,6 +170,8 @@ void writeLasers()
  digitalWrite(laserLatchPin,HIGH); 
 }
 
+
+/*
 byte shiftIn(int myDataPin, int myClockPin)
 {
  int i;
@@ -112,7 +220,7 @@ byte shiftIn(int myDataPin, int myClockPin)
   return myDataIn;
  
 }
-
+*/
 void shiftOut(int myDataPin, int myClockPin, byte myDataOut) {
   // This shifts 8 bits out MSB first, 
   //on the rising edge of the clock,
