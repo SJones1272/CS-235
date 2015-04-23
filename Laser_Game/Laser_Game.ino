@@ -1,69 +1,244 @@
-#define numLasers 8
-byte laserByte; photoByte;
+#include <Adafruit_NeoPixel.h>
 
-int laserLatchPin, laserDataPin, laserClockPin;
-//int photoLatchPin, photoDataPin, photoClockPin;
-int photoSelectPin; //S_0 pin for the multiplexor
-int photoDataPin, photoLatchPin; //Output wire, and OE wire
+#define numLasers 9
+# define NUMPIXELS 20
+# define neoPin 6
+
 int gameMode;
-int S_0, S_1, S_2;
+int gameStartTime;
+int currentTime;
+//lasers
+int currentPhotoReads[8];
+int basePhotoReads[8];
+boolean laserStates[8];
+int abc = 0;
 
 /* Gamemode 1 variables */
 int blinkTimeStamp = 0;
 int dodgeCount = 0;
 boolean blinking = false;
+int TIMELIMIT = 10000; //10 seconds
+boolean lost = false;
 
+//time between laser blinks
+int delayBlink = 150;
+
+Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, neoPin, NEO_GRB + NEO_KHZ800);
+
+static const uint8_t analogPins[] = {A0, A1, A2, A3, A4, A5, A6, A7};
+static const uint8_t laserPins[] = {20, 21, 22, 23, 24, 25, 26, 27, 28};
 void setup()
 {
-  laserLatchPin = 3;
-  laserDataPin = 4;
-  laserClockPin = 5;
-  photoSelectPin = 6; // 7 and 8 are also select pins S_0, S_1 , S_2
-  S_0 = photoSelectPin;
-  S_1 = S_0 + 1;
-  S_2 = S_1 + 1;
   
-  photoLatchPin = 9; //OE pin
-  photoDataPin = 10; //input read pin
-  laserByte = 0x00;
+  gameStartTime = millis();
+
+   
   
   Serial.begin(9600);
-  
+  pixels.begin();
   for(int i = 3; i < 9;i++)
   pinMode(i,OUTPUT);
   
-  pinMode(photoDataPin,INPUT);
-
+  
+  calibratePhoto();
+  
   gameMode = 0; //start the menu option
+  for(int r = 0; r<20; r++){
+   pixels.setPixelColor(r, pixels.Color(255,0,0));
+   pixels.show();
+  }
+  pixels.show();
+  
+  
+  
 }
 
+void updatePhoto(){
+  for(int i = 0; i< 8; i++){
+   currentPhotoReads[i] = analogRead(analogPins[i]);
+ }
+}
+
+void calibratePhoto(){
+ for(int i = 0; i< 8; i++){
+   currentPhotoReads[i] = analogRead(analogPins[i]);
+ }
+ int r = 0;
+ while(r < 3){
+   for(int z = 0; z<8; z++){
+    currentPhotoReads[z] = (currentPhotoReads[z] + analogRead(analogPins[z]))/2; 
+   }
+   r++;
+ }
+ 
+}
+
+void startTimeLights(){
+  gameStartTime = millis();
+  pixels.clear();
+  for(int i = 0; i< NUMPIXELS; i++)
+  {
+    pixels.setPixelColor(i, pixels.Color(0,255,0));
+    }
+  pixels.show();  
+  delay(200);
+}
+
+void updateLights(){
+  currentTime = millis();
+  int tempTime = currentTime - gameStartTime;
+  
+  tempTime = map(tempTime, 0, TIMELIMIT, 0, NUMPIXELS);
+  pixels.clear();
+  //Serial.println(tempTime);
+  
+ for(int i = 20; i>=(20-tempTime); i--){
+  pixels.setPixelColor(i, pixels.Color(255,0,0));
+ }
+ for(int i = 0; i<=(20-tempTime); i++){
+  pixels.setPixelColor(i, pixels.Color(0,255,0));
+ }
+ 
+ if(tempTime > 21){
+  abc = 0;
+  delay(500); 
+ }
+
+ pixels.show();
+}
+
+void stopLights(){
+ pixels.clear(); 
+}
 void loop()
 {
-  checkLasers(); //read in the new values for the resistors
-  writeLasers(); //write out the laser states (if changed)
-  if(gameMode > 0)
-  runGame(gameMode);
-  else
+  if(abc == 0){
+   startTimeLights();
+    abc++; 
+  }
+  else{
+   updateLights(); 
+  }
+  
+  //updatePhoto();
+  //debugPhoto();
+  //delay(2000);
+  
+  //writeLasers(); //write out the laser states (if changed
   //runMenu();
-  
-  
-  for(int i = 0; i < 8; i++)
-  if(nthBit(photoByte,i)==1)
-  Serial.println(i); // laser blocked at i
 }
 
-void runGame(int game){runBaseGame(); //for adding more gamemodes}
+void debugPhoto(){
+ 
+  for(int i = 0; i< 8; i++){
+   Serial.print("A");
+   Serial.print(i);
+   Serial.print(": ");
+   Serial.print("Base: ");
+   Serial.print(basePhotoReads[i]);
+   Serial.print("   current: ");
+   Serial.println(currentPhotoReads[i]);
+   }
+  delay(200); 
+  Serial.println("===============================");
+}
+
+void updateLasers(){
+ for(int i = 0; i< 8; i++){
+  digitalWrite(laserPins[i], laserStates[i]);
+ } 
+}
+
+/*
+void runGame(int game){
+  if(game == 0)
+    runDodgeGame();
+  else if(game == 1)
+    runBlockGame(); //for adding more gamemodes
+}
+
+//runs the dodge game
+void runDodgeGame(){
+  //start the game
+  //generate random lasers
+  randomLasers(floor(dodgeCount/3));
+  
+  for(int i = 0; i< 3; i++){
+    delay(delayBlink);
+  
+  }
+  startTimeLights();
+  updateLights();
+  
+  while(currentTime - gameStartTime < TIMELIMIT){
+    checkLasers();
+   if(!anyBlocked()){
+    lost = true ;
+    break;
+   }else{
+    updateLights();
+   } 
+  }
+  
+  if(!lost){
+  dodgeCount++;
+  }
+  else{
+    dodgeCount = 0;
+    lost = false;
+  } 
+}
+//runs the block game
+void runBlockGame(){
+  //start the game
+  //generate random lasers
+  randomLasers(floor(dodgeCount/3));
+  
+  for(int i = 0; i< 3; i++){
+   
+  }
+  startTimeLights();
+  updateLights();
+  
+  while(currentTime - gameStartTime < TIMELIMIT){
+    checkLasers();
+   if(anyNotBlocked()){
+    lost = true;
+    break;
+   }else{
+    updateLights();
+   } 
+  }
+  
+  if(!lost){
+  dodgeCount++;
+  }
+  else{
+    dodgeCount = 0;
+    lost = false;
+  }
+}
+
 
 void runBaseGame()
 {
-  int curTime = millis();
+   int curTime = millis();
    if(blinking && curTime - blinkTimeStamp <= 5000 && (blinkTimeStamp != 0))
    {
-     countDown(curTime);
+     //countDown(curTime);
    }else{
      if(anyBlocked())
      {
-       //failure animation, then 
+       stopLights();
+       for(int i = 0; i< 3; i++){
+         pixels.clear();
+        for(int r = 0; r< NUMPIXELS; r++){
+         pixels.setPixelColor(r, pixels.Color(0,0,255));
+        }
+        pixels.show();
+        delay(150);
+       }
+         //failure animation, then 
        // gameOver(); or lives--;
      }else
      {
@@ -104,6 +279,7 @@ void randomLasers(int i)
  {
   setLaser(rand[j],true); 
  }
+ 
 }
 
 void clearLasers(){for(int i = 0; i < numLasers; i++){setLaser(i,false);}}
@@ -124,6 +300,16 @@ byte setBit(byte b, int n,boolean value)
 
 void setLaser(int i,boolean on){laserByte = setBit(laserByte,i,on);}
 boolean isBlocked(int n){return (nthBit(photoByte,n) == 1);}
+boolean isNotBlocked(int n){return (nthBit(photoByte, n) == 0);}
+
+boolean anyNotBlocked(){
+ for(int i = 0; i<numLasers; i++)
+ {
+   if(isNotBlocked(i))
+     return false;
+ }
+ return true;
+ }
 
 boolean anyBlocked()
 {
@@ -133,137 +319,22 @@ boolean anyBlocked()
   return true;
 }
 
+
 void checkLasers()
 {
- digitalWrite(photoLatchPin,LOW); //Enables output to the arduin
- /*
+  for(int i = 0; i< 8; i++){
+    
+  }
+  /*
+ digitalWrite(photoLatchPin,HIGH); //Enables output to the arduin
  delayMicroseconds(20);
  digitalWrite(photoLatchPin,LOW); 
  photoByte = shiftIn(photoDataPin,photoClockPin);
- */
- photoByte = readRecs();
- digitalWrite(photoLatchPin,HIGH);
-}
-
-byte readRecs()
-{
-   byte b = 0x00;
-   for(int i = 0; i < 8; i++)
-   setBit(b,i,(readMultiplex(i)==1));
-
-   return b;
-}
-
-int readMultiplex(int i)
-{
-  digitalWrite(S_0,nthBit(i,0));
-  digitalWrite(S_1,nthBit(i,1));
-  digitalWrite(S_2,nthBit(i,2));
-  
-  return digitalRead(photoDataPin);
-}
-
-void writeLasers()
-{
- digitalWrite(laserLatchPin,LOW);
- shiftOut(laserDataPin,laserClockPin,laserByte);
- digitalWrite(laserLatchPin,HIGH); 
-}
-
-
-/*
-byte shiftIn(int myDataPin, int myClockPin)
-{
- int i;
-  int temp = 0;
-  int pinState;
-  byte myDataIn = 0;
-
-  pinMode(myClockPin, OUTPUT);
-  pinMode(myDataPin, INPUT);
-//we will be holding the clock pin high 8 times (0,..,7) at the
-//end of each time through the for loop
-
-//at the begining of each loop when we set the clock low, it will
-//be doing the necessary low to high drop to cause the shift
-//register's DataPin to change state based on the value
-//of the next bit in its serial information flow.
-//The register transmits the information about the pins from pin 7 to pin 0
-//so that is why our function counts down
-  for (i=7; i>=0; i--)
-  {
-    digitalWrite(myClockPin, 0);
-    delayMicroseconds(0.2);
-    temp = digitalRead(myDataPin);
-    if (temp) {
-      pinState = 1;
-      //set the bit to 0 no matter what
-      myDataIn = myDataIn | (1 << i);
-    }
-    else {
-      //turn it off -- only necessary for debuging
-     //print statement since myDataIn starts as 0
-      pinState = 0;
-    }
-
-    //Debuging print statements
-    //Serial.print(pinState);
-    //Serial.print("     ");
-    //Serial.println (dataIn, BIN);
-
-    digitalWrite(myClockPin, 1);
-
-  }
-  //debuging print statements whitespace
-  //Serial.println();
-  //Serial.println(myDataIn, BIN);
-  return myDataIn;
  
 }
 */
-void shiftOut(int myDataPin, int myClockPin, byte myDataOut) {
-  // This shifts 8 bits out MSB first, 
-  //on the rising edge of the clock,
-  //clock idles low
 
-  //internal function setup
-  int i=0;
-  int pinState;
-  pinMode(myClockPin, OUTPUT);
-  pinMode(myDataPin, OUTPUT);
 
-  //clear everything out just in case to
-  //prepare shift register for bit shifting
-  digitalWrite(myDataPin, 0);
-  digitalWrite(myClockPin, 0);
 
-  //for each bit in the byte myDataOut�
-  //NOTICE THAT WE ARE COUNTING DOWN in our for loop
-  //This means that %00000001 or "1" will go through such
-  //that it will be pin Q0 that lights. 
-  for (i=7; i>=0; i--)  {
-    digitalWrite(myClockPin, 0);
 
-    //if the value passed to myDataOut and a bitmask result 
-    // true then... so if we are at i=6 and our value is
-    // %11010100 it would the code compares it to %01000000 
-    // and proceeds to set pinState to 1.
-    if ( myDataOut & (1<<i) ) {
-      pinState= 1;
-    }
-    else {  
-      pinState= 0;
-    }
-
-    //Sets the pin to HIGH or LOW depending on pinState
-    digitalWrite(myDataPin, pinState);
-    //register shifts bits on upstroke of clock pin  
-    digitalWrite(myClockPin, 1);
-    //zero the data pin after shift to prevent bleed through
-    digitalWrite(myDataPin, 0);
-  }
-
-  //stop shifting
-  digitalWrite(myClockPin, 0);
-}
 
