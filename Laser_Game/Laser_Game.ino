@@ -1,10 +1,10 @@
 #include <Adafruit_NeoPixel.h>
 
-#define numLasers 9
 # define NUMPIXELS 20
 # define neoPin 7
 # define BRIGHTNESS 50
 # define LASER_THRESHHOLD 75
+# define NUMLASERS 8
 
 int gameMode;
 int gameStartTime;
@@ -13,13 +13,12 @@ int currentTime;
 int currentPhotoReads[8];
 int basePhotoReads[8];
 boolean laserStates[8] = {false,false,false,false,false,false,false,false};
-int abc = 0;
+int abc = 0; //curent game state variable
 
 /* Gamemode 1 variables */
-int blinkTimeStamp = 0;
 int dodgeCount = 0;
 boolean blinking = false;
-int TIMELIMIT = 10000; //10 seconds
+int TIMELIMIT = 5000; //5 seconds, 10 seconds is enough for a smooth countdown. 
 boolean lost = false;
 
 //time between laser blinks
@@ -50,6 +49,7 @@ void setup()
 
 void loop()
 {
+  /*
   if(abc == 0){
    startTimeLights();
     abc++; 
@@ -57,13 +57,15 @@ void loop()
   else{
    updateLights(); 
   }
+  */
+  
+  updatePhoto();
+  debugPhoto();
+  delay(2000);
   
   
-  //updatePhoto();
-  //debugPhoto();
-  //delay(2000);
   
-  //pushLasers(); //write out the laser states (if changed
+  pushLasers(); //write out the laser states (if changed
   //runMenu();
 }
 
@@ -73,7 +75,7 @@ void loop()
 void mapPins()
 {
   int tempRead = -1;
- for(int i = 0; i < 8; i++)
+ for(int i = 0; i < NUMLASERS; i++)
   {
     for(int j = 0; j < 8; j++){
     tempRead = analogRead(analogPins[j]);
@@ -86,18 +88,17 @@ void mapPins()
   }
  /* Debug statement */
     Serial.println("Lasers mapped to the following values: ");
-    for(int i = 0; i < 8; i++){Serial.print("Laser "); Serial.print(i); Serial.print(" was mapped to resistor "); Serial.println(mappedPins[i]);} 
+    for(int i = 0; i < NUMLASERS; i++){Serial.print("Laser "); Serial.print(i); Serial.print(" was mapped to resistor "); Serial.println(mappedPins[i]);} 
 }
 
 void initPixels()
 {
  for(int i = 0; i < NUMPIXELS; i++)
-  pixels.setPixelColor(i,pixels.Color(0,BRIGHTNESS,0); 
+  pixels.setPixelColor(i,pixels.Color(0,BRIGHTNESS,0)); 
  pixels.show();
 }
 
-void calibratePhoto(){
-  startUpLights();  
+void calibratePhoto(){ 
  for(int i = 0; i< 8; i++){
    basePhotoReads[i] = analogRead(mappedPins[i]);
  }
@@ -114,14 +115,16 @@ void calibratePhoto(){
 /* HELPER FUNCTIONS ***********************************************************************************/
 void updatePhoto(){for(int i = 0; i< 8; i++)currentPhotoReads[i] = analogRead(mappedPins[i]);}
 void pushLasers(){for(int i = 0; i< 8; i++){digitalWrite(laserPins[i], laserStates[i]);}} //send out the laserState values at the end of loop()
-void clearLasers(){for(int i = 0; i < numLasers; i++){setLaser(i,false);}} 
+void clearLasers(){for(int i = 0; i < NUMLASERS; i++){setLaser(i,false);}}
+void darkLasers(){for(int i = 0; i < NUMLASERS; i++){writeLaser(i,LOW);}}   //turn off all lasers without changing the laser state variables.
 void setLaser(int i, boolean hilo){laserStates[i] = hilo;}                 //update a laser state to be written at the end of loop()
 void writeLaser(int i,int hilo){digitalWrite(laserPins[i],hilo);}          //bypass the updating states to write a specific laser now
 void stopLights(){pixels.clear();}
-void randomLasers(int diff)
+void randomLasers(int incBy)
 {
-  if( diff < 2)
-  diff = 2;
+  int diff = 2 + incBy;
+  if(diff > 8)
+  diff = 8;
   boolean temp[] = {false,false,false,false,false,false,false,false};
   
   int i = 0;
@@ -138,11 +141,12 @@ void randomLasers(int diff)
   laserStates[i] = temp[i];
 }
 
+boolean timeIsUp(){return currentTime - gameStartTime >= TIMELIMIT;};
 boolean laserOn(int i){return LASER_THRESHHOLD <= (basePhotoReads[i] - currentPhotoReads[i]);}
 boolean isBlocked(int n){return laserStates[n] && laserOn(n);}
-boolean anyBlocked()
+boolean anyBlocked() //should be called after updating photoresistor values.
 {
- for(int i = 0; i < 8; i++)
+ for(int i = 0; i < NUMLASERS; i++)
   if(isBlocked(i))
    return true;
   
@@ -157,15 +161,13 @@ void startTimeLights(){
   for(int i = 0; i< NUMPIXELS; i++)
   {
     pixels.setPixelColor(i, pixels.Color(0,BRIGHTNESS,0));
-    }
+  }
   pixels.show();  
   delay(200);
 }
 
 void updateLights(){
-  currentTime = millis();
   int tempTime = currentTime - gameStartTime;
-  
   tempTime = map(tempTime, 0, TIMELIMIT, 0, NUMPIXELS);
   pixels.clear();
   //Serial.println(tempTime);
@@ -176,57 +178,93 @@ void updateLights(){
  for(int i = 0; i<=(20-tempTime); i++){
   pixels.setPixelColor(i, pixels.Color(0,BRIGHTNESS,0));
  }
- 
- if(tempTime > 21){
-  abc = 0;
-  delay(500); 
- }
-
  pixels.show();
 }
 
+void updateLightsUp(){
+  int tempTime = currentTime - gameStartTime;
+  tempTime = map(tempTime, 0, TIMELIMIT, NUMPIXELS, 0);
+  pixels.clear();
+  //Serial.println(tempTime);
+  
+ for(int i = 20; i>=(20-tempTime); i--){
+  pixels.setPixelColor(i, pixels.Color(BRIGHTNESS,0,0));
+ }
+ for(int i = 0; i<=(20-tempTime); i++){
+  pixels.setPixelColor(i, pixels.Color(0,BRIGHTNESS,0));
+ }
+ pixels.show();
+}
+
+boolean newRound(){return abc == 0;}
+
+void startRound(){
+  randomLasers(floor(dodgeCount/3)); 
+  pushLasers(); 
+  startTimeLights();}
+
+void blinkLasers()
+{
+ int tempTime = currentTime - gameStartTime; 
+ if(((tempTime % 1000) % 2) == 0) //if the remainder of tempTime/1000 is even, then turn lasers on, else turn them off
+   pushLasers();
+ else
+   darkLasers();
+}
+
+void animateGoodDodge()
+{
+ int tempTime = currentTime - gameStartTime;
+ pixels.clear();
+  if(((tempTime % 1000) % 2) == 0)
+    for(int i = 0; i < NUMPIXELS; i++)
+      pixels.setPixelColor(i,pixels.Color(0,BRIGHTNESS,0));
+  pixels.show();
+}
+  
 void runDodgeGame(){
-  //start the game
-  //generate random lasers
-  randomLasers(floor(dodgeCount/3));
-  
-  for(int i = 0; i< 3; i++){
-    delay(delayBlink);
-  }
-  startTimeLights();
-  updateLights();
-  
-  while(currentTime - gameStartTime < TIMELIMIT){
-    updatePhoto();
-   if(!anyBlocked()){
-    lost = true ;
-    break;
+currentTime = millis();
+  if(newRound()){          //if a new round, generate random lasers, set the start time, and go
+     startRound(); abc++;
+  }else if(abc == 1)      // show the player the lasers for TIMELIMIT secs and then proceed
+  {
+   updateLights();
+   blinkLasers();
+   if(timeIsUp()){
+   abc++; gameStartTime = millis(); pushLasers();}
+  }else if(abc == 2)
+  {// check if lasers are blocked, if not count up, else do nothing
+   updatePhoto();
+   if(anyBlocked()){
+    lost = true;   //gameOver() will be called the next time loop initiates.
+    return;
    }else{
-    updateLights();
-   } 
-  }
-  
-  if(!lost){
-  dodgeCount++;
-  }
-  else{
-    dodgeCount = 0;
-    lost = false;
-  } 
+    updateLightsUp(); //otherwise count back up in green for TIMELIMIT secs
+    if(timeIsUp()){
+    abc++; gameStartTime = millis(); clearLasers(); pushLasers();}
+   }
+  }else if(abc == 3){
+    lost = false; // make sure the lost variable is false.
+    animateGoodDodge(); //flash green pixels
+    if(timeIsUp()){abc = 0; dodgeCount++;} //start over with 1 more dodge
+  }else{ //shouldn't happen
+    Serial.println("INVALID GAME STATE");
+    return;
+  }  
 }
 /* DEBUGGING FUNCTIONS ********************************************************************************/
 /* can only be used after mapPins is called */
 void debugLasers()
 {
  //for debug
- for(int i = 0; i < 8; i++){
+ for(int i = 0; i < NUMLASERS; i++){
    setLaser(i,HIGH);
  }
  pushLasers();
   delay(5000); 
 updatePhoto();
    
- for(int i = 0 ; i < 8; i++)
+ for(int i = 0 ; i < NUMLASERS; i++)
  if(!laserOn(i)){
    Serial.print("No laser detected at "); Serial.println(currentPhotoReads[i]); 
   }
