@@ -3,7 +3,7 @@
 # define NUMPIXELS 20
 # define neoPin 7
 # define BRIGHTNESS 50
-# define LASER_THRESHHOLD 75
+# define LASER_THRESHHOLD 180
 # define NUMLASERS 8
 # define RESETTIME 8000 // 8 seconds
 # define MAPPINGDELAY 500
@@ -11,6 +11,8 @@
 int gameMode;
 int gameStartTime;
 int currentTime;
+int partyTime;
+int partyStep = 0;
 //lasers
 int currentPhotoReads[8];
 int basePhotoReads[8];
@@ -63,11 +65,9 @@ void setup()
   pixels.clear();
   pixels.show();
   pushLasers();  //sends out the laserStates values to the pins
-  
 }
 
-void loop()
-{  
+void loop(){
   if(lost){
     pixels.clear();
     setAllPixels(pixels.Color(BRIGHTNESS,0,0));
@@ -99,8 +99,10 @@ void loop()
     else if(selectionBlock(1))
     selecting = 2;
     else if(selectionBlock(2))
+    {Serial.println(basePhotoReads[2]);
+     Serial.println(currentPhotoReads[2]);
     selecting = 3;
-    pixels.show();
+    }pixels.show();
   }
   
   if((abc >= 0) && (abc <= 3)){
@@ -108,9 +110,11 @@ void loop()
         runDodgeGame();
       else if(selecting == 2)
         runBlockGame();
-      else if(selecting == 3)
-        runDodgeBlock();
+      //else 
+        //runDodgeBlock();
   }
+ if(selecting == 3)
+   runPartyMode(); 
 }
 
 void runDodgeBlock(){selecting = 0;};
@@ -145,7 +149,7 @@ void mapPins()
 void initPixels()
 {
  for(int i = 0; i < NUMPIXELS; i++)
-  pixels.setPixelColor(i,pixels.Color(0,BRIGHTNESS,0)); 
+  pixels.setPixelColor(i,pixels.Color(BRIGHTNESS,BRIGHTNESS,BRIGHTNESS)); 
  pixels.show();
 }
 
@@ -173,6 +177,32 @@ void writeLaser(int i,int hilo){digitalWrite(laserPins[i],hilo);}          //byp
 void stopLights(){pixels.clear();}
 void setAllPixels(uint32_t c){for(int i = 0; i < NUMPIXELS; i++){pixels.setPixelColor(i,c);}}
 
+void rainbow(uint8_t wait) {
+  uint16_t i, j;
+ 
+  for(j=0; j<256; j++) {
+    for(i=0; i<pixels.numPixels(); i++) {
+      pixels.setPixelColor(i, Wheel((i+j) & 255));
+    }
+    pixels.show();
+    delay(wait);
+  }
+}
+
+uint32_t Wheel(byte WheelPos) {
+  if(WheelPos < 85) {
+   return pixels.Color(WheelPos * 3, 255 - WheelPos * 3, 0);
+  } else if(WheelPos < 170) {
+   WheelPos -= 85;
+   return pixels.Color(255 - WheelPos * 3, 0, WheelPos * 3);
+  } else {
+   WheelPos -= 170;
+   return pixels.Color(0, WheelPos * 3, 255 - WheelPos * 3);
+  }
+}
+
+
+
 void randomLasers(int incBy)
 {
   int diff = 2 + incBy;
@@ -198,7 +228,7 @@ boolean newRound(){return abc == 0;}
 boolean timeIsUp(){return currentTime - gameStartTime >= TIMELIMIT;};
 boolean laserOn(int i){return (basePhotoReads[i] - currentPhotoReads[i]) >= LASER_THRESHHOLD;}
 boolean isBlocked(int n){return laserStates[n] && !laserOn(n);}
-boolean selectionBlock(int i){ return !laserOn(i);}
+boolean selectionBlock(int i){return !laserOn(i);}
 boolean notBlocked(int i){return laserStates[i] && laserOn(i);}
 boolean anyBlocked() //should be called after updating photoresistor values.
 {
@@ -211,6 +241,26 @@ boolean anyBlocked() //should be called after updating photoresistor values.
 boolean allBlocked(){for(int i = 0; i < NUMLASERS; i++){if(notBlocked(i)){return false;}}return true;}
 
 /* GAME LOGIC *****************************************************************************************/
+
+void runPartyMode()
+{ Serial.println("Partying");
+  uint16_t i, j;
+ 
+  for(j=0; j<256*5; j++) { //5 cycles of all colors on wheel
+    for(i=0; i< pixels.numPixels(); i++) {
+      pixels.setPixelColor(i, Wheel(((i * 256 / pixels.numPixels()) + j) & 255));
+    }
+    pixels.show();
+   int curTime = millis();
+   if((curTime % 50) == 0)
+     writeLaser(partyStep,HIGH);
+   else if((curTime % 50) == 49)
+   {writeLaser(partyStep,LOW);
+      partyStep++;
+    if(partyStep >= 8)
+  partyStep = 0;
+  }}
+}
 
 void startTimeLights(boolean dodge){
   gameStartTime = millis();
