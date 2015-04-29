@@ -109,7 +109,7 @@ void loop(){
       runDodgeGame();
     else if(selecting == 2)
       runBlockGame();
-    else if(selectng == 4) 
+    else if(selecting == 4) 
     runDodgeBlock();
   }
   if(selecting == 3)

@@ -8,6 +8,7 @@ void gameOver()
   gameStartTime = millis();
   currentTime = gameStartTime;
   while(currentTime - gameStartTime <= RESETTIME){ 
+    currentTime=millis();
     flashPixels(pixels.Color(BRIGHTNESS,0,0),500);
     pixels.show();
     dodgeCount = 0;
@@ -24,7 +25,9 @@ void runPartyMode()
 { 
   Serial.println("Partying");
   uint16_t i, j;
-
+  
+  
+  
   for(j=0; j<256*5; j++) { //5 cycles of all colors on wheel
     for(i=0; i< pixels.numPixels(); i++) {
       pixels.setPixelColor(i, Wheel(((i * 256 / pixels.numPixels()) + j) & 255));
@@ -129,7 +132,7 @@ void animateGood(boolean dodge)
   if(dodge)
     flashPixels(pixels.Color(0,BRIGHTNESS,0),350);
   else
-    flashPixels(pixels.Color(0,BRIGHTNESS,0),350);
+    flashPixels(pixels.Color(0,0,BRIGHTNESS),350);
 }
 
 void runDodgeGame(){
