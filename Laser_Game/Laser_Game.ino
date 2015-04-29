@@ -7,7 +7,7 @@
 # define NUMLASERS 8
 # define RESETTIME 8000 // 8 seconds
 # define MAPPINGDELAY 500
-# define OPTIONS 3
+# define OPTIONS 4
 
 int gameMode;
 int gameStartTime;

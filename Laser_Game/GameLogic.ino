@@ -8,7 +8,7 @@ void gameOver()
   gameStartTime = millis();
   currentTime = gameStartTime;
   while(currentTime - gameStartTime <= RESETTIME){ 
-    setAllPixels(pixels.Color(BRIGHTNESS,0,0));
+    flashPixels(pixels.Color(BRIGHTNESS,0,0),500);
     pixels.show();
     dodgeCount = 0;
     selecting = 0;
@@ -113,7 +113,7 @@ void flashPixels(uint32_t c,int wait)
 {
   int tempTime = currentTime - gameStartTime;
   int timeCheck = (round(tempTime/wait) % 3);
-  if(timeCheck == 1 || timeCheck == 3){
+  if(timeCheck == 1 || timeCheck == 2){
     pixels.clear();
     pixels.show();
   }
