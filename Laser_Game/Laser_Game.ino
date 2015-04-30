@@ -8,11 +8,9 @@
 # define RESETTIME 8000 // 8 seconds
 # define MAPPINGDELAY 500
 # define OPTIONS 4
+# define PARTYTIME 30000 //30 seconds of party time
 
-int gameMode;
-int gameStartTime;
-int currentTime;
-int partyTime;
+int gameMode, gameStartTime, currentTime;
 int partyStep = 0;
 //lasers
 int currentPhotoReads[8];
@@ -48,12 +46,12 @@ void setup()
   for(int i = 0; i < NUMLASERS; i++)
     pinMode(laserPins[i],OUTPUT);
 
-  /*
+  
   for(int i = 0; i < NUMLASERS; i++)
    writeLaser(i,HIGH);
-   delay(60000);
+   delay(30000);
    darkLasers();
-   */
+   
   gameStartTime = millis();
   Serial.begin(9600);
   pixels.begin();
@@ -113,7 +111,7 @@ void loop(){
     runDodgeBlock();
   }
   if(selecting == 3)
-    runPartyMode(); 
+    runPartyMode(PARTYTIME); 
 }
 
 /* Initialization Functions ********************************************************************/

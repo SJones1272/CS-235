@@ -21,27 +21,32 @@ void gameOver()
   delay(500); 
 }
 
-void runPartyMode()
+void runPartyMode(int ms)
 { 
   Serial.println("Partying");
   uint16_t i, j;
-  
-  
-  
-  for(j=0; j<256*5; j++) { //5 cycles of all colors on wheel
+  gameStartTime = millis();
+  while(true){ //5 cycles of all colors on wheel
+  currentTime = millis();
     for(i=0; i< pixels.numPixels(); i++) {
       pixels.setPixelColor(i, Wheel(((i * 256 / pixels.numPixels()) + j) & 255));
     }
     pixels.show();
-    int curTime = millis();
-    if((curTime % 50) == 0)
-      writeLaser(partyStep,HIGH);
-    else if((curTime % 50) == 49)
-    {
+    Serial.println(j);
+    
+    if((j % 10) == 0){Serial.print("ON "); Serial.println(j);
+      writeLaser(partyStep,HIGH);}
+    else if((j % 10) == 9){
       writeLaser(partyStep,LOW);
       partyStep++;
       if(partyStep >= 8)
         partyStep = 0;
+    }
+    delay(1);
+    j++;
+    if(currentTime - gameStartTime >= ms){
+      selecting = 0;
+      return;
     }
   }
 }
