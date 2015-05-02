@@ -32,11 +32,10 @@ void runPartyMode(int ms)
       pixels.setPixelColor(i, Wheel(((i * 256 / pixels.numPixels()) + j) & 255));
     }
     pixels.show();
-    Serial.println(j);
-    
-    if((j % 10) == 0){Serial.print("ON "); Serial.println(j);
-      writeLaser(partyStep,HIGH);}
-    else if((j % 10) == 9){
+   
+    if((j % 20) == 0)
+      writeLaser(partyStep,HIGH);
+    else if((j % 20) == 19){
       writeLaser(partyStep,LOW);
       partyStep++;
       if(partyStep >= 8)
@@ -46,6 +45,7 @@ void runPartyMode(int ms)
     j++;
     if(currentTime - gameStartTime >= ms){
       selecting = 0;
+      darkLasers();
       return;
     }
   }
