@@ -9,6 +9,7 @@
 # define MAPPINGDELAY 500
 # define OPTIONS 4
 # define PARTYTIME 30000 //30 seconds of party time
+# define LASER_SFX 1
 
 int gameMode, gameStartTime, currentTime;
 int partyStep = 0;
@@ -93,11 +94,8 @@ void loop(){
     else if(selectionBlock(1))
       selecting = 2;
     else if(selectionBlock(2))
-    {
-      Serial.println(basePhotoReads[2]);
-      Serial.println(currentPhotoReads[2]);
       selecting = 3;
-    }else if(selectionBlock(3))
+    else if(selectionBlock(3))
       selecting = 4;
     pixels.show();
   }
@@ -127,17 +125,18 @@ void mapPins()
       tempRead[j] = analogRead(analogPins[j]); // read the dark
     }
     writeLaser(i,HIGH);
+    playLaser();
     delay(MAPPINGDELAY);
     for(int j = 0; j < 8; j++)
     {
       nextRead[j] = analogRead(analogPins[j]); 
-      Serial.print("Pin A"); 
+     /* Serial.print("Pin A"); 
       Serial.print(j); 
       Serial.print(" start value: "); 
       Serial.print(tempRead[j]); 
       Serial.print(" Laser on value: "); 
       Serial.println(nextRead[j]);
-      if((tempRead[j] - nextRead[j]) >= LASER_THRESHHOLD)
+     */ if((tempRead[j] - nextRead[j]) >= LASER_THRESHHOLD)
       { 
         mappedPins[i] = analogPins[j]; 
         writeLaser(i,LOW); 
@@ -148,13 +147,13 @@ void mapPins()
     delay(MAPPINGDELAY);
   }
   /* Debug statement */
-  Serial.println("Lasers mapped to the following values: ");
+ /* Serial.println("Lasers mapped to the following values: ");
   for(int i = 0; i < NUMLASERS; i++){
     Serial.print("Laser "); 
     Serial.print(i); 
     Serial.print(" was mapped to resistor "); 
     Serial.println(mappedPins[i]);
-  } 
+  } */
 }
 
 void initPixels()

@@ -7,6 +7,11 @@ void pushLasers(){
     digitalWrite(laserPins[i], laserStates[i]);
   }
 } //send out the laserState values at the end of loop()
+
+void playLaser()
+{
+ Serial.write(1); 
+}
 void clearLasers(){
   for(int i = 0; i < NUMLASERS; i++){
     setLaser(i,false);
@@ -63,7 +68,6 @@ uint32_t Wheel(byte WheelPos) {
 void randomLasers(int incBy)
 {
   int diff = 2 + incBy;
-  Serial.println(incBy);
   if(diff > 8)
     diff = 8;
   boolean temp[] = {
@@ -79,14 +83,14 @@ void randomLasers(int incBy)
   }
 
   for(int i = 0; i < 8; i++){ 
-    Serial.print("Laser "); 
+   /* Serial.print("Laser "); 
     Serial.print(i); 
-    Serial.print(" is "); 
+    Serial.print(" is "); */
     if(temp[i]){
-      Serial.println("ON"); 
+//      Serial.println("ON"); 
     }
     else{
-      Serial.println("OFF");
+  //    Serial.println("OFF");
     }
     laserStates[i] = temp[i];
   }
@@ -114,9 +118,9 @@ boolean anyBlocked() //should be called after updating photoresistor values.
 {
   for(int i = 0; i < NUMLASERS; i++){
     if(isBlocked(i)){
-      Serial.print("Laser "); 
+     /* Serial.print("Laser "); 
       Serial.print(i); 
-      Serial.println(" is Blocked");
+      Serial.println(" is Blocked");*/
       return true;
     }
   }

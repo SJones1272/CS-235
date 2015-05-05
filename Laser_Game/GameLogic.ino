@@ -23,7 +23,6 @@ void gameOver()
 
 void runPartyMode(int ms)
 { 
-  Serial.println("Partying");
   uint16_t i, j;
   gameStartTime = millis();
   while(true){ //5 cycles of all colors on wheel
@@ -106,15 +105,19 @@ void startRound(boolean dodge){
   randomLasers(floor(dodgeCount/2)); 
   pushLasers(); 
   startTimeLights(dodge);
+  Serial.write(1);
 }
 
 void blinkLasers()
 {
-  int tempTime = currentTime - gameStartTime; 
+  int tempTime = currentTime - gameStartTime;
   if((round(tempTime/1000) % 2) == 0) //if the remainder of tempTime/1000 is even, then turn lasers on, else turn them off
     pushLasers();
   else
     darkLasers();
+    
+    if(tempTime % 2000 == 0)
+      playLaser();
 }
 
 void flashPixels(uint32_t c,int wait)
@@ -143,16 +146,16 @@ void animateGood(boolean dodge)
 void runDodgeGame(){
   currentTime = millis();
   if(newRound()){          //if a new round, generate random lasers, set the start time, and go
-    startRound(true); 
+    startRound(true);
     abc++; 
-    Serial.println("Starting a new game!");
+   // Serial.println("Starting a new game!");
   }
   else if(abc == 1)      // show the player the lasers for TIMELIMIT secs and then proceed
   {
     updateLights(false);
     blinkLasers();
     if(timeIsUp()){ 
-      Serial.println("Start dodging!");
+   //   Serial.println("Start dodging!");
       abc++; 
       gameStartTime = millis(); 
       pushLasers();
@@ -169,7 +172,7 @@ void runDodgeGame(){
     else{
       updateLightsUp(false); //otherwise count back up in green for TIMELIMIT secs
       if(timeIsUp()){ 
-        Serial.println("Good job!");
+   //     Serial.println("Good job!");
         abc++; 
         gameStartTime = millis(); 
         clearLasers(); 
@@ -186,7 +189,7 @@ void runDodgeGame(){
     } //start over with 1 more dodge
   }
   else{ //shouldn't happen
-    Serial.println("INVALID GAME STATE");
+   // Serial.println("INVALID GAME STATE");
     return;
   }  
 }
@@ -197,14 +200,14 @@ void runBlockGame()
   if(newRound()){          //if a new round, generate random lasers, set the start time, and go
     startRound(false); 
     abc++; 
-    Serial.println("Starting a new game!");
+   // Serial.println("Starting a new game!");
   }
   else if(abc == 1)      // show the player the lasers for TIMELIMIT secs and then proceed
   {
     updateLights(true);
     blinkLasers();
     if(timeIsUp()){ 
-      Serial.println("Start blocking!");
+   //   Serial.println("Start blocking!");
       abc++; 
       gameStartTime = millis(); 
       pushLasers();
@@ -221,7 +224,7 @@ void runBlockGame()
     else{
       updateLightsUp(true); //otherwise count back up in green for TIMELIMIT secs
       if(timeIsUp()){ 
-        Serial.println("Good job!");
+   //     Serial.println("Good job!");
         abc++; 
         gameStartTime = millis(); 
         clearLasers(); 
@@ -238,7 +241,7 @@ void runBlockGame()
     } //start over with 1 more dodge
   }
   else{ //shouldn't happen
-    Serial.println("INVALID GAME STATE");
+   // Serial.println("INVALID GAME STATE");
     return;
   }  
 }
