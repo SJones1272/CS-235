@@ -77,8 +77,13 @@ void loop(){
   if(lost){
     gameOver();
   }
-  if(selecting == 0)
+  if(selecting == 0){
+    setAllPixels(pixels.Color(BRIGHTNESS,0,BRIGHTNESS));
+    pixels.show();
+    for(int i = 0; i < OPTIONS; i++){writeLaser(i,HIGH);}
+    delay(5000);
     startSelectTime = millis();
+  }
   while(selecting == 0){
     setAllPixels(pixels.Color(BRIGHTNESS,0,BRIGHTNESS));
     for(int i = 0; i < OPTIONS; i++)
